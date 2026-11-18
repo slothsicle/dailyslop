@@ -33,6 +33,7 @@ def handle_message(
             puzzle=score.puzzle,
             total=score.total,
             display=score.display(),
+            detail=score.detail,
         )
         return Handled(game, score, is_new)
     return None

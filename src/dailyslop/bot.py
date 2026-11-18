@@ -232,7 +232,7 @@ class DailySlopBot(discord.Client):
         else:
             await message.channel.send(
                 f"{message.author.mention}, you already posted "
-                f"{result.game.title} #{result.score.puzzle}.",
+                f"{result.game.title} {result.game.puzzle_label(result.score.puzzle)}.",
                 delete_after=10,
             )
 

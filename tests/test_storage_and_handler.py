@@ -199,3 +199,72 @@ def test_answering_the_prompt_records_the_choice(db):
 
 def test_unknown_user_has_no_preference(db):
     assert db.get_sharing(999) is None
+
+
+# --- more games, labels, and the schema migration ---------------------------
+
+CHAINLE_90 = "Chainle #90 · 2,837\nBeat 71% of players\n\nhttps://chainle.io/"
+CHAINLE_90_LOW = "Chainle #90 · 1,200\nBeat 20% of players"
+
+
+def test_chainle_is_detected_and_board_shows_total_and_percentile(db):
+    result = post(db, ANN, "ann", CHAINLE_90)
+    assert result.game.key == "chainle" and result.is_new
+    post(db, BOB, "bob", CHAINLE_90_LOW)
+    title, entries = build_board(db, X, GAMES["chainle"], "today", {ANN, BOB})
+    assert title == "Chainle #90"
+    assert entries == [Entry("ann", "2,837 · beat 71%"), Entry("bob", "1,200 · beat 20%")]
+
+
+def test_games_do_not_mix_on_a_board(db):
+    post(db, ANN, "ann", CHAINLE_90)
+    post(db, ANN, "ann", K125_365)  # same user, different game
+    assert build_board(db, X, KRILLION, "today", {ANN})[1] == [Entry("ann", "365")]
+    assert build_board(db, X, GAMES["chainle"], "today", {ANN})[1] == [
+        Entry("ann", "2,837 · beat 71%")
+    ]
+
+
+def test_maptap_board_title_uses_the_date_label(db):
+    from datetime import date
+
+    ordinal = date(2026, 11, 17).toordinal()
+    db.add_score(
+        guild_id=X, user_id=ANN, user_name="ann", game="maptap",
+        puzzle=ordinal, total=929, display="MapTap · Nov 17 · 929",
+    )
+    title, entries = build_board(db, X, GAMES["maptap"], "today", {ANN})
+    assert title == "MapTap Nov 17" and entries == [Entry("ann", "929")]
+
+
+def test_duplicate_chainle_is_rejected(db):
+    assert post(db, ANN, "ann", CHAINLE_90).is_new
+    assert not post(db, ANN, "ann", CHAINLE_90_LOW).is_new
+
+
+def test_old_database_without_detail_column_is_migrated(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "old.db"
+    old = sqlite3.connect(path)
+    old.executescript(
+        """
+        CREATE TABLE scores (
+            guild_id INTEGER NOT NULL, user_id INTEGER NOT NULL, user_name TEXT NOT NULL,
+            game TEXT NOT NULL, puzzle INTEGER NOT NULL, total INTEGER NOT NULL,
+            display TEXT NOT NULL, created_at REAL NOT NULL,
+            PRIMARY KEY (guild_id, user_id, game, puzzle)
+        );
+        INSERT INTO scores VALUES (1, 10, 'ann', 'krillion', 125, 365, 'x', 1.0);
+        """
+    )
+    old.commit()
+    old.close()
+
+    migrated = Database(path)
+    assert build_board(migrated, 1, KRILLION, "today", {10}) == (
+        "Krillion #125", [Entry("ann", "365")]
+    )
+    assert post(migrated, 11, "bob", CHAINLE_90, guild_id=1).is_new  # new column is writable
+    migrated.close()
+    Database(path).close()  # reopening an already-migrated file is fine

@@ -18,9 +18,9 @@ anything it couldn't parse.
 | Game | Ranked by | Status |
 |---|---|---|
 | Krillion | Total points (higher is better, max 700) | ✅ Supported |
+| Chainle | Total score (higher is better, max 5,000), shown with the percentile | ✅ Supported |
+| MapTap | Final score (higher is better, max 1,000) | ✅ Supported |
 | Wordle | Fewest guesses | Planned |
-| Chainle | Total score, with percentile | Planned |
-| MapTap | Final score | Planned |
 
 See [ROADMAP.md](ROADMAP.md) for details.
 

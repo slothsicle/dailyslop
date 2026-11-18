@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS scores (
     total      INTEGER NOT NULL,
     display    TEXT    NOT NULL,
     created_at REAL    NOT NULL,
+    detail     TEXT    NOT NULL DEFAULT '',
     PRIMARY KEY (guild_id, user_id, game, puzzle)
 );
 CREATE INDEX IF NOT EXISTS idx_scores_lookup ON scores (guild_id, game, puzzle);
@@ -44,6 +45,7 @@ class Score:
     puzzle: int
     total: int
     created_at: float
+    detail: str = ""  # extra text shown next to the total, e.g. "beat 71%"
 
 
 class Database:
@@ -52,6 +54,14 @@ class Database:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(path)
         self.conn.executescript(SCHEMA)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Bring databases created by older versions up to date."""
+        columns = {row[1] for row in self.conn.execute("PRAGMA table_info(scores)")}
+        if "detail" not in columns:  # added in v0.2
+            self.conn.execute("ALTER TABLE scores ADD COLUMN detail TEXT NOT NULL DEFAULT ''")
+            self.conn.commit()
 
     def close(self) -> None:
         self.conn.close()
@@ -102,6 +112,7 @@ class Database:
         puzzle: int,
         total: int,
         display: str,
+        detail: str = "",
     ) -> bool:
         """Store a score. Returns False if it's a duplicate.
 
@@ -116,8 +127,10 @@ class Database:
             if exists:
                 return False
         cur = self.conn.execute(
-            "INSERT OR IGNORE INTO scores VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (guild_id, user_id, user_name, game, puzzle, total, display, time.time()),
+            "INSERT OR IGNORE INTO scores "
+            "(guild_id, user_id, user_name, game, puzzle, total, display, created_at, detail) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (guild_id, user_id, user_name, game, puzzle, total, display, time.time(), detail),
         )
         self.conn.commit()
         return cur.rowcount == 1
@@ -127,7 +140,7 @@ class Database:
         those from users who opted in to sharing. The caller still has to check that
         shared users are actually members here (see boards.py)."""
         rows = self.conn.execute(
-            "SELECT guild_id, user_id, user_name, puzzle, total, created_at FROM scores "
+            "SELECT guild_id, user_id, user_name, puzzle, total, created_at, detail FROM scores "
             "WHERE game = ? AND (guild_id = ? OR user_id IN "
             "(SELECT user_id FROM prefs WHERE sharing = 1))",
             (game, guild_id),

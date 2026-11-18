@@ -30,6 +30,11 @@ def visible_scores(
     return list(unique.values())
 
 
+def _value(total: int, detail: str = "") -> str:
+    text = f"{total:,}"
+    return f"{text} · {detail}" if detail else text
+
+
 def build_board(
     db: Database,
     guild_id: int,
@@ -58,7 +63,7 @@ def build_board(
             ranked.append((sign * avg, -len(rows), names.get(uid, latest.user_name), avg, len(rows)))
         ranked.sort(key=lambda r: r[:3])
         entries = [
-            Entry(name, f"{avg:.1f} avg · {n} play{'s' if n != 1 else ''}")
+            Entry(name, f"{avg:,.1f} avg · {n} play{'s' if n != 1 else ''}")
             for _, _, name, avg, n in ranked
         ]
         return f"{game.title} · all-time", entries
@@ -68,5 +73,7 @@ def build_board(
     latest_puzzle = max(s.puzzle for s in scores)
     today = [s for s in scores if s.puzzle == latest_puzzle]
     today.sort(key=lambda s: (sign * s.total, s.created_at))
-    entries = [Entry(names.get(s.user_id, s.user_name), str(s.total)) for s in today]
-    return f"{game.title} #{latest_puzzle}", entries
+    entries = [
+        Entry(names.get(s.user_id, s.user_name), _value(s.total, s.detail)) for s in today
+    ]
+    return f"{game.title} {game.puzzle_label(latest_puzzle)}", entries

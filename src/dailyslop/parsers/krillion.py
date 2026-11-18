@@ -38,6 +38,10 @@ class KrillionScore:
     total: int
     emojis: str  # the 7 tier emoji, in order
 
+    @property
+    def detail(self) -> str:
+        return ""  # nothing extra to show next to the total on a leaderboard
+
     def display(self) -> str:
         return f"Krillion #{self.puzzle} · {self.total} · {self.emojis}"
 
