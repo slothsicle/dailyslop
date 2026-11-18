@@ -31,3 +31,13 @@ def render_page(entries: list[Entry], page: int, page_size: int = PAGE_SIZE) -> 
         marker = MEDALS.get(rank, f"`{rank}.`")
         lines.append(f"{marker} **{entry.name}** · {entry.value}")
     return "\n".join(lines)
+
+
+def quote_annotation(text: str, limit: int = 400) -> str:
+    """Format a person's comment as a Discord quote, shortened if it's long."""
+    text = text.strip()
+    if not text:
+        return ""
+    if len(text) > limit:
+        text = text[: limit - 1].rstrip() + "…"
+    return "\n".join(f"> {line}" for line in text.splitlines())

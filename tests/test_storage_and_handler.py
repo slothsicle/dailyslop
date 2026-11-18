@@ -22,8 +22,15 @@ def db():
     d.close()
 
 
-def post(db, user_id, name, text, guild_id=X):
+def post_all(db, user_id, name, text, guild_id=X):
+    """The full result: every score found plus the leftover comment, or None."""
     return handle_message(db, guild_id=guild_id, user_id=user_id, user_name=name, text=text)
+
+
+def post(db, user_id, name, text, guild_id=X):
+    """Convenience for single-score messages: the first score found, or None."""
+    result = post_all(db, user_id, name, text, guild_id)
+    return result.shares[0] if result else None
 
 
 def board(db, guild_id, members, scope="today", names=None):

@@ -35,8 +35,11 @@ Krillion parser, SQLite storage, and the bot skeleton are built. The Discord lay
 ## Conventions
 - Adding a game = adding one parser module plus its tests.
 - Parsers are pure functions with no Discord or database code, so they stay easy to test.
-- **If a post fails validation or can't be parsed, the bot must leave the message alone.**
-  Never delete a message we couldn't confidently parse.
+- **If no complete, valid score is found in a message, the bot must leave it alone.**
+  Never delete a message we couldn't confidently parse. Parsers stay strict about their own
+  format; `handler.find_shares` locates share blocks inside longer messages (comments above or
+  below, several scores at once) and the leftover text is reposted as a quote so nothing the
+  person wrote is lost. Messages with >500 chars of other text or >30 lines are left alone.
 - Never print or log the Discord token.
 
 ## MapTap facts

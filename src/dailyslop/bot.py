@@ -12,7 +12,7 @@ from dailyslop.boards import build_board
 from dailyslop.db import Database
 from dailyslop.games import GAMES, Game
 from dailyslop.handler import handle_message
-from dailyslop.leaderboard import Entry, page_count, render_page
+from dailyslop.leaderboard import Entry, page_count, quote_annotation, render_page
 
 log = logging.getLogger("dailyslop")
 
@@ -220,19 +220,37 @@ class DailySlopBot(discord.Client):
         if result is None:
             return  # not a score we fully understand: leave the message alone
 
-        if result.is_new:
-            title, entries = board_for(self.db, message.guild, result.game, "today")
+        name = message.author.display_name
+        quote = quote_annotation(result.annotation)
+        no_pings = discord.AllowedMentions.none()  # a comment must never ping anyone
+        posted_any = False
+        repeats: list[str] = []
+
+        # Post first, delete second: if posting fails the original is still there.
+        for share in result.shares:
+            if not share.is_new:
+                repeats.append(f"{share.game.title} {share.game.puzzle_label(share.score.puzzle)}")
+                continue
+            title, entries = board_for(self.db, message.guild, share.game, "today")
             view = LeaderboardView(title, entries)
-            # Post first, delete second: if posting fails the original is still there.
+            content = f"**{name}** · {share.score.display()}"
+            if quote and not posted_any:  # their comment travels with the first new score
+                content += f"\n{quote}"
             view.message = await message.channel.send(
-                f"**{message.author.display_name}** · {result.score.display()}",
+                content,
                 embed=board_embed(title, entries, 0),
                 view=view,
+                allowed_mentions=no_pings,
             )
-        else:
+            posted_any = True
+
+        if quote and not posted_any:  # every score was a repeat: still keep what they wrote
             await message.channel.send(
-                f"{message.author.mention}, you already posted "
-                f"{result.game.title} {result.game.puzzle_label(result.score.puzzle)}.",
+                f"**{name}**\n{quote}", allowed_mentions=no_pings
+            )
+        if repeats:
+            await message.channel.send(
+                f"{message.author.mention}, you already posted {', '.join(repeats)}.",
                 delete_after=10,
             )
 

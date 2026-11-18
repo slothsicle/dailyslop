@@ -41,6 +41,17 @@ The bot replaces it with:
 >
 > 🥇 **slothsicle** · 365
 
+**Comments are kept.** If someone writes something above or below their score, the bot still
+finds the score and reposts their comment as a quote underneath, with mentions turned off so
+a comment can never ping anyone:
+
+> **slothsicle** · Chainle #78 · 4,382 · beat 98%
+> > goml shitbags
+
+Several scores in one message (say Krillion and Chainle together) are each recorded. A
+message with a lot of other text (over about 500 characters or 30 lines) is treated as a
+conversation and left alone.
+
 Only one score per person per puzzle counts. A repeat paste is deleted, and the bot
 posts a short note that disappears after 10 seconds.
 
@@ -147,7 +158,5 @@ entry to `games.py`.
 
 - The leaderboard buttons stop working after 10 minutes or a bot restart. Run
   `/leaderboard` again for a fresh one.
-- A paste with extra text around it (like a comment above the score) is not recognized, so
-  the bot leaves it alone.
 - Cross-server sharing is covered by tests, but I've only run the live bot in one server so
   far.
