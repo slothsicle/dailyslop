@@ -1,8 +1,8 @@
-# Deploying to a Google Cloud e2-micro
+# Deploying to a small VPS (Hetzner)
 
-This runs the bot 24/7 on Google Cloud's Always Free VM, as a systemd service that
-restarts on crashes and reboots. Free-tier terms change, so check the current rules at
-<https://cloud.google.com/free/docs/free-cloud-features> before you start.
+This runs the bot 24/7 on a cheap virtual server, as a systemd service that restarts on
+crashes and reboots. These steps were written for Hetzner Cloud, but any Debian or Ubuntu
+VPS works the same after step 1. Prices change, so check the current plan list.
 
 ## 0. Before you start
 
@@ -10,45 +10,51 @@ restarts on crashes and reboots. Free-tier terms change, so check the current ru
   second application (e.g. `dailyslop-prod`) with its own token and Message Content Intent
   turned on, and invite it to your real server. That way testing locally never takes the
   live bot offline. Follow the "Setup" section of the README for each step.
-- You need a Google account and a credit card (Google requires one on file, even for the
-  free tier).
+- **Have an SSH key.** If `ls ~/.ssh/id_ed25519.pub` finds nothing, make one on your own
+  computer:
 
-## 1. Create the VM
+  ```bash
+  ssh-keygen -t ed25519 -C "your-label"
+  cat ~/.ssh/id_ed25519.pub     # this public half is what you give the provider
+  ```
 
-In the [Google Cloud Console](https://console.cloud.google.com/):
+  Set a passphrase when asked.
 
-1. Create a project (or use the default) and **enable billing** for it.
-2. **Set a budget alert first**: *Billing → Budgets & alerts → Create budget*, for $1, so a
-   mistake can't quietly cost money.
-3. *Compute Engine → VM instances → Create instance*:
-   - **Region:** one of `us-west1`, `us-central1` or `us-east1`. The free tier only covers
-     these.
-   - **Machine type:** `e2-micro` (under *Shared-core*).
-   - **Boot disk:** Debian 12 or Ubuntu 24.04 LTS (Python 3.11+ is required). Set the disk
-     type to **Standard persistent disk**, not the default Balanced one. The free tier only
-     covers standard, up to 30 GB; 10 GB is plenty.
-   - **Firewall:** leave HTTP and HTTPS unchecked. The bot only makes outbound connections.
-4. **Check the estimated monthly cost** on the right side of the page before clicking
-   Create. It should show the free-tier discount. I'm not certain how Google currently
-   treats the VM's external IPv4 address; if the estimate shows a small charge for it, that
-   is the IP, and you should decide whether it's acceptable. Don't reserve a static IP.
-5. Click **Create**, then use the **SSH** button next to the VM to open a browser terminal.
-   No key setup is needed.
+## 1. Create the server
+
+At <https://console.hetzner.cloud/>:
+
+1. Create an account and a project.
+2. **Add Server**:
+   - **Location:** any. Discord latency barely depends on it, so pick the cheapest or
+     closest.
+   - **Image:** Debian 12 or Ubuntu 24.04 (Python 3.11+ is required).
+   - **Type:** the smallest shared-vCPU plan. The bot needs very little.
+   - **Networking:** keep the public IPv4 address. GitHub and Discord are reachable over
+     IPv4, so don't go IPv6-only.
+   - **SSH key:** click *Add SSH key* and paste your public key. This is what lets you log in.
+   - **Backups:** optional extra (a percentage of the server price). The guide's own daily
+     backup covers the database, so you can skip it.
+3. Optionally add a **Firewall** that allows inbound SSH (port 22) only. The bot makes
+   outbound connections only, so nothing else needs to be open.
+4. Create the server and note its IPv4 address.
+
+Connect from your computer:
+
+```bash
+ssh root@<server-ip>
+```
 
 ## 2. Prepare the server
 
-In the SSH terminal:
+Run these on the server:
 
 ```bash
-sudo apt update && sudo apt install -y git python3-venv
-
-# Optional but sensible on a 1 GB machine: 1 GB of swap
-sudo fallocate -l 1G /swapfile && sudo chmod 600 /swapfile
-sudo mkswap /swapfile && sudo swapon /swapfile
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+apt update && apt upgrade -y
+apt install -y sudo git python3-venv
 
 # A dedicated, login-less user to run the bot
-sudo useradd --system --create-home --shell /usr/sbin/nologin dailyslop
+useradd --system --create-home --shell /usr/sbin/nologin dailyslop
 ```
 
 ## 3. Get the code (the repo is private)
@@ -56,17 +62,17 @@ sudo useradd --system --create-home --shell /usr/sbin/nologin dailyslop
 Use a read-only deploy key so the server can pull but never push.
 
 ```bash
-sudo mkdir -p /opt/dailyslop && sudo chown dailyslop:dailyslop /opt/dailyslop
 sudo -u dailyslop mkdir -m 700 /home/dailyslop/.ssh
 sudo -u dailyslop ssh-keygen -t ed25519 -N '' -C 'dailyslop-vm' -f /home/dailyslop/.ssh/id_ed25519
-sudo cat /home/dailyslop/.ssh/id_ed25519.pub
+cat /home/dailyslop/.ssh/id_ed25519.pub
 ```
 
 Copy that public key. On GitHub, go to the repo's **Settings → Deploy keys → Add deploy
 key**, paste it, and leave **Allow write access unchecked**. Then:
 
 ```bash
-sudo -u dailyslop ssh-keyscan github.com | sudo -u dailyslop tee -a /home/dailyslop/.ssh/known_hosts
+mkdir -p /opt/dailyslop && chown dailyslop:dailyslop /opt/dailyslop
+sudo -u dailyslop sh -c 'ssh-keyscan github.com >> /home/dailyslop/.ssh/known_hosts'
 sudo -u dailyslop git clone git@github.com:slothsicle/dailyslop.git /opt/dailyslop
 ```
 
@@ -80,7 +86,7 @@ sudo -u dailyslop mkdir -p data backups
 
 # Create the config. Paste your PRODUCTION token after DISCORD_TOKEN=
 sudo -u dailyslop cp .env.example .env
-sudo chmod 600 /opt/dailyslop/.env
+chmod 600 /opt/dailyslop/.env
 sudo -u dailyslop nano .env
 ```
 
@@ -90,9 +96,9 @@ little while to show up the first time.
 ## 5. Start it
 
 ```bash
-sudo cp deploy/dailyslop.service deploy/dailyslop-backup.service deploy/dailyslop-backup.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now dailyslop.service dailyslop-backup.timer
+cp deploy/dailyslop.service deploy/dailyslop-backup.service deploy/dailyslop-backup.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now dailyslop.service dailyslop-backup.timer
 
 systemctl status dailyslop        # should say "active (running)"
 journalctl -u dailyslop -f        # live logs; look for "Logged in as"
@@ -105,9 +111,9 @@ The bot should now show as online in your server.
 | Task | Command |
 |---|---|
 | Watch logs | `journalctl -u dailyslop -f` |
-| Restart | `sudo systemctl restart dailyslop` |
-| Stop | `sudo systemctl stop dailyslop` |
-| Run a backup now | `sudo systemctl start dailyslop-backup` |
+| Restart | `systemctl restart dailyslop` |
+| Stop | `systemctl stop dailyslop` |
+| Run a backup now | `systemctl start dailyslop-backup` |
 | List backups | `ls -l /opt/dailyslop/backups` |
 
 ### Updating the bot
@@ -116,7 +122,7 @@ The bot should now show as online in your server.
 cd /opt/dailyslop
 sudo -u dailyslop git pull
 sudo -u dailyslop .venv/bin/pip install -e .
-sudo systemctl restart dailyslop
+systemctl restart dailyslop
 ```
 
 ### Backups
@@ -124,28 +130,28 @@ sudo systemctl restart dailyslop
 A timer runs `deploy/backup.py` daily and keeps the last 14 copies in
 `/opt/dailyslop/backups/`. It uses SQLite's backup API, so it's safe while the bot runs.
 
-Those copies sit on the same disk as the database, so they don't protect you if the VM is
-lost. Occasionally copy one to your own machine, for example from your computer:
+Those copies sit on the same disk as the database, so they don't protect you if the server
+is lost. Occasionally copy one to your own machine, from your computer:
 
 ```bash
-gcloud compute scp --zone <zone> <vm-name>:/opt/dailyslop/backups/<file>.db .
+scp root@<server-ip>:/opt/dailyslop/backups/<file>.db .
 ```
-
-(That reads the file as your own VM user, so you may need to `sudo cp` it somewhere your
-user can read first.)
 
 ### Restoring
 
 ```bash
-sudo systemctl stop dailyslop
+systemctl stop dailyslop
 sudo -u dailyslop cp /opt/dailyslop/backups/<file>.db /opt/dailyslop/data/dailyslop.db
-sudo systemctl start dailyslop
+systemctl start dailyslop
 ```
 
 ## Security notes
 
 - The production token lives only in `/opt/dailyslop/.env` (mode 600). If it ever leaks,
   click **Reset Token** in the Developer Portal and update the file.
-- The VM has no inbound ports open except SSH through Google's console tooling.
-- The deploy key is read-only. If the VM is compromised, delete it under the repo's
+- Log in with your SSH key only. Hetzner disables password login when you add a key at
+  creation. Keep your private key's passphrase on.
+- The deploy key is read-only. If the server is compromised, delete it under the repo's
   Deploy keys.
+- Keep the OS patched: `apt update && apt upgrade -y` every so often, or enable
+  `unattended-upgrades`.

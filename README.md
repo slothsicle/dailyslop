@@ -84,7 +84,7 @@ cp .env.example .env     # then edit .env and set DISCORD_TOKEN
 python -m dailyslop
 ```
 
-To keep it running 24/7, see [docs/deploy.md](docs/deploy.md) (Google Cloud e2-micro with
+To keep it running 24/7, see [docs/deploy.md](docs/deploy.md) (a small Hetzner VPS with
 systemd and daily backups).
 
 ### Configuration
