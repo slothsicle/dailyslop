@@ -21,7 +21,10 @@ from dataclasses import dataclass
 
 MAX_SCORE = 5000
 
-_HEADER = re.compile(r"^Chainle\s+#(\d+)\s*[·•|\-]\s*(\d{1,3}(?:,\d{3})+|\d+)$", re.IGNORECASE)
+# The score can be followed by decorative symbols (real posts end the line with 🔗).
+_HEADER = re.compile(
+    r"^Chainle\s+#(\d+)\s*[·•|\-]\s*(\d{1,3}(?:,\d{3})+|\d+)\s*[^\w\s]*$", re.IGNORECASE
+)
 _BEAT = re.compile(r"^Beat\s+(\d{1,3})%\s+of\s+players$", re.IGNORECASE)
 _URL = re.compile(r"^https?://(?:www\.)?chainle\.(?:org|io)/?\S*$", re.IGNORECASE)
 
@@ -41,8 +44,14 @@ class ChainleScore:
 
 
 def _ignorable(line: str) -> bool:
-    """The share link, or a line of pure emoji/symbols (the per-round squares)."""
-    return bool(_URL.match(line)) or not any(ch.isalnum() for ch in line)
+    """The share link, or a line of pure emoji/symbols (the per-round squares).
+
+    Real posts sometimes put the squares and the link on one line with no space between
+    them, so any leading symbols are dropped before checking for the link.
+    """
+    if not any(ch.isalnum() for ch in line):
+        return True
+    return bool(_URL.match(re.sub(r"^[^\w]+", "", line)))
 
 
 def parse(text: str) -> ChainleScore | None:

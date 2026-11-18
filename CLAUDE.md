@@ -49,10 +49,11 @@ sources**, so the parser only enforces it within `TOLERANCE` (5). If more real p
 fix the weights or loosen the check; don't assume the formula is right.
 
 ## Chainle facts
-Share text: `Chainle #N · 2,837` / `Beat 71% of players` / optional link (the real post said `https://chainle.io/`, the game's site is chainle.org; both accepted). Any
-extra line with no letters or digits (per-round colored squares) is ignored. Ranked by total
+Share text: `Chainle #N · 2,837 🔗` / `Beat 71% of players` / a line of 5 colored squares (🟥🟧🟨🟩) / optional link (the real post said `https://chainle.io/`, the game's site is chainle.org; both accepted). Any
+extra line with no letters or digits (the squares) is ignored; the squares may be glued directly to the link
+with no space (seen in a real post), and the header may end in a decorative `🔗`. Ranked by total
 (max 5,000, stated on chainle.org; it doesn't say higher is better, but points accumulate),
-with the percentile shown as `detail`. chainle.org shows no share text, so the format is from one real post.
+with the percentile shown as `detail`. chainle.org shows no share text, so the format comes from four real posts.
 Lines of any other text make it unparseable, so the bot leaves the message alone.
 
 ## Krillion facts (verified against real posts)

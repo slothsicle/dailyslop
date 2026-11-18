@@ -11,8 +11,8 @@
   is off, correct the weights in `parsers/maptap.py`.
 - **Chainle.** The 5,000 maximum is stated on chainle.org, but the site shows no share text,
   so the parser is built from one real post. The sample post's link said `chainle.io`; confirm which domain
-  real posts carry (both are accepted). Get a paste that includes the per-round colored squares
-  to confirm the parser ignores them, and confirm higher is better.
+  real posts carry (both are accepted). Parser is tested against four real posts (with the 🔗
+  header and colored squares). Still unconfirmed: that higher is better.
 - **Cross-server sharing** is tested offline only. Check live in two real servers that share
   a member.
 

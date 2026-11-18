@@ -60,3 +60,29 @@ def test_percentile_over_100_is_rejected():
 )
 def test_malformed_returns_none(text):
     assert parse(text) is None
+
+
+# --- real posts, copied as they were pasted ---------------------------------
+
+REAL_POSTS = [
+    ("Chainle #90 · 2,837 🔗\nBeat 71% of players\n🟧🟨🟨🟧🟧\nhttps://chainle.io/", 90, 2837, 71),
+    # squares and link on one line, no space between
+    ("Chainle #90 · 2,371 🔗\nBeat 39% of players\n🟥🟧🟨🟩🟧https://chainle.io/", 90, 2371, 39),
+    # no link at all
+    ("Chainle #84 · 3,815 🔗\nBeat 95% of players\n🟧🟨🟨🟨🟩", 84, 3815, 95),
+    ("Chainle #78 · 3,218 🔗\nBeat 42% of players\n🟨🟥🟨🟨🟨\nhttps://chainle.io/", 78, 3218, 42),
+]
+
+
+@pytest.mark.parametrize("text,puzzle,total,percentile", REAL_POSTS)
+def test_real_posts(text, puzzle, total, percentile):
+    assert parse(text) == ChainleScore(puzzle=puzzle, total=total, percentile=percentile)
+
+
+def test_real_post_display_drops_the_decoration():
+    assert parse(REAL_POSTS[1][0]).display() == "Chainle #90 · 2,371 · beat 39%"
+
+
+def test_squares_glued_to_some_other_text_are_still_rejected():
+    assert parse("Chainle #90 · 2,371 🔗\nBeat 39% of players\n🟥🟧🟨🟩🟧nice one") is None
+    assert parse("Chainle #90 · 2,371 🔗\nBeat 39% of players\n🟥🟧🟨🟩🟧https://example.com/") is None
