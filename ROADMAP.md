@@ -1,7 +1,8 @@
 # Roadmap / future versions
 
 ## v0.1: Krillion (current)
-- Krillion parser + tests (samples: #110 535, #125 190 / 365 / 385).
+- Done: Krillion parser + tests, SQLite storage, `/leaderboard` with paging, bot skeleton.
+- TODO: run against a real Discord server and fix whatever breaks (the Discord layer is untested).
 
 ## Later
 ### More games
@@ -14,13 +15,10 @@
   final score, higher is better. No puzzle number, so key on the date.
 
 ### Bot
-- SQLite storage, one row per `(user, game, puzzle_id)`; repeat paste is deleted with a brief note.
-- `/leaderboard game:<name>` slash command, button pagination (◀ ▶), default view today,
-  all-time as an option. Possibly weekly and streaks.
-- Compact repost format, e.g. `slothsicle · Krillion #125 · 365 · 🦑🦑🐟🫧🦑🦑🏮`
-  (Krillion keeps all 7 emoji).
-- Discord setup: bot needs Manage Messages and the Message Content intent.
-- Single server for now; multi-server later.
+- Weekly boards and streaks.
+- Persistent leaderboard buttons (currently expire after 10 minutes / restart).
+- Optionally find a score inside a longer message instead of requiring an exact paste.
+- Multi-server hardening (storage is already keyed by guild).
 
 ### Open questions
 - Spoiler handling for emoji grids (Wordle).

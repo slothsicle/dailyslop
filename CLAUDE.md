@@ -5,7 +5,8 @@ score, the bot deletes it, posts a compact reformatted version, and shows a per-
 leaderboard.
 
 ## Status
-Scaffold only. Current milestone: **Krillion parser** (see `ROADMAP.md` for everything else).
+Krillion parser, SQLite storage, and the bot skeleton are built. The Discord layer
+(`bot.py`) has not been run against a real server yet. Next games are in `ROADMAP.md`.
 
 ## Commands
 - Setup: `python -m venv .venv && source .venv/bin/activate && pip install -e '.[dev]'`
@@ -15,8 +16,12 @@ Scaffold only. Current milestone: **Krillion parser** (see `ROADMAP.md` for ever
 
 ## Layout
 - `src/dailyslop/parsers/`: one module per game. Each parser takes raw message text and
-  returns a parsed score, or `None` if the text isn't that game.
-- `tests/`: one test file per parser, using real pasted samples.
+  returns a parsed score (`.puzzle`, `.total`, `.display()`), or `None` if it isn't that game.
+- `games.py`: registry of games and ranking direction. `handler.py`: Discord-free
+  text -> stored score. `db.py`: SQLite (one row per guild/user/game/puzzle).
+  `leaderboard.py`: rendering/paging. `bot.py`: Discord glue only; keep logic out of it.
+- `tests/`: parser tests use real pasted samples. Storage/handler tests use `:memory:` DBs.
+- Bot posts the compact message *before* deleting the original, so a failed post never loses a score.
 
 ## Conventions
 - Adding a game = adding one parser module plus its tests.
