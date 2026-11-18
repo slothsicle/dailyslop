@@ -8,28 +8,28 @@ import os
 import discord
 from discord import app_commands
 
-from dailyslop.db import Database, Entry
+from dailyslop.boards import build_board
+from dailyslop.db import Database
 from dailyslop.games import GAMES, Game
 from dailyslop.handler import handle_message
-from dailyslop.leaderboard import page_count, render_page
+from dailyslop.leaderboard import Entry, page_count, render_page
 
 log = logging.getLogger("dailyslop")
 
-VIEW_TIMEOUT = 600  # seconds before the page buttons stop working
+VIEW_TIMEOUT = 600  # seconds before buttons stop working
 
 
-def build_board(db: Database, guild_id: int, game: Game, scope: str) -> tuple[str, list[Entry]]:
-    """Return (title, entries) for a game's board. scope is 'today' or 'all-time'."""
-    if scope == "all-time":
-        entries = db.all_time_board(guild_id, game.key, higher_is_better=game.higher_is_better)
-        return f"{game.title} · all-time", entries
-    puzzle = db.latest_puzzle(guild_id, game.key)
-    if puzzle is None:
-        return f"{game.title} · today", []
-    entries = db.puzzle_board(
-        guild_id, game.key, puzzle, higher_is_better=game.higher_is_better
+def board_for(db: Database, guild: discord.Guild, game: Game, scope: str) -> tuple[str, list[Entry]]:
+    """Build one server's board, using that server's member list and nicknames."""
+    members = guild.members  # needs the Server Members intent
+    return build_board(
+        db,
+        guild.id,
+        game,
+        scope,
+        member_ids={m.id for m in members},
+        names={m.id: m.display_name for m in members},
     )
-    return f"{game.title} #{puzzle}", entries
 
 
 def board_embed(title: str, entries: list[Entry], page: int) -> discord.Embed:
@@ -78,14 +78,65 @@ class LeaderboardView(discord.ui.View):
                 pass
 
 
+class SharePromptView(discord.ui.View):
+    """One-time question: show this person's scores on their other servers too?"""
+
+    def __init__(self, db: Database, user_id: int) -> None:
+        super().__init__(timeout=VIEW_TIMEOUT)
+        self.db = db
+        self.user_id = user_id
+        self.message: discord.Message | None = None
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message(
+                "This question is for someone else.", ephemeral=True
+            )
+            return False
+        return True
+
+    async def _answer(self, interaction: discord.Interaction, share: bool) -> None:
+        self.db.set_sharing(self.user_id, share)
+        self.stop()
+        text = (
+            "✅ Your scores will show on the leaderboards of every server you share with this bot."
+            if share
+            else "👍 Your scores will stay on the server where you post them."
+        )
+        await interaction.response.edit_message(
+            content=f"{text} Change it any time with `/sharing`.", view=None, delete_after=20
+        )
+
+    @discord.ui.button(label="Share across servers", style=discord.ButtonStyle.success)
+    async def share_button(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        await self._answer(interaction, True)
+
+    @discord.ui.button(label="Keep separate", style=discord.ButtonStyle.secondary)
+    async def private_button(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        await self._answer(interaction, False)
+
+    async def on_timeout(self) -> None:
+        # Unanswered: stay private, tidy up. They can still use /sharing.
+        if self.message is not None:
+            try:
+                await self.message.delete()
+            except discord.HTTPException:
+                pass
+
+
 class DailySlopBot(discord.Client):
     def __init__(self, db: Database) -> None:
         intents = discord.Intents.default()
         intents.message_content = True  # privileged: enable it in the Developer Portal
+        intents.members = True  # privileged: needed to know who is in each server
         super().__init__(intents=intents)
         self.db = db
         self.tree = app_commands.CommandTree(self)
         self._register_commands()
+
+    def mutual_server_count(self, user_id: int) -> int:
+        """How many servers running this bot the user is a member of."""
+        return sum(1 for g in self.guilds if g.get_member(user_id) is not None)
 
     def _register_commands(self) -> None:
         game_choices = [app_commands.Choice(name=g.title, value=g.key) for g in GAMES.values()]
@@ -102,8 +153,8 @@ class DailySlopBot(discord.Client):
             game: app_commands.Choice[str],
             scope: app_commands.Choice[str] | None = None,
         ) -> None:
-            title, entries = build_board(
-                self.db, interaction.guild_id, GAMES[game.value], scope.value if scope else "today"
+            title, entries = board_for(
+                self.db, interaction.guild, GAMES[game.value], scope.value if scope else "today"
             )
             if not entries:
                 await interaction.response.send_message(
@@ -115,6 +166,33 @@ class DailySlopBot(discord.Client):
                 embed=board_embed(title, entries, 0), view=view
             )
             view.message = await interaction.original_response()
+
+        @self.tree.command(
+            name="sharing", description="Choose whether your scores show on your other servers"
+        )
+        @app_commands.choices(
+            setting=[
+                app_commands.Choice(name="Share across servers", value="share"),
+                app_commands.Choice(name="Keep separate", value="private"),
+            ]
+        )
+        async def sharing(
+            interaction: discord.Interaction, setting: app_commands.Choice[str] | None = None
+        ) -> None:
+            if setting is None:
+                current = self.db.get_sharing(interaction.user.id)
+                state = {True: "shared across servers", False: "kept separate", None: "kept separate (not set)"}[current]
+                await interaction.response.send_message(
+                    f"Your scores are currently **{state}**.", ephemeral=True
+                )
+                return
+            self.db.set_sharing(interaction.user.id, setting.value == "share")
+            await interaction.response.send_message(
+                "✅ Your scores will show on every server you share with this bot."
+                if setting.value == "share"
+                else "👍 Your scores will show only on the server where you post them.",
+                ephemeral=True,
+            )
 
     async def setup_hook(self) -> None:
         dev_guild = os.environ.get("DEV_GUILD_ID")
@@ -143,9 +221,7 @@ class DailySlopBot(discord.Client):
             return  # not a score we fully understand: leave the message alone
 
         if result.is_new:
-            title, entries = build_board(
-                self.db, message.guild.id, result.game, "today"
-            )
+            title, entries = board_for(self.db, message.guild, result.game, "today")
             view = LeaderboardView(title, entries)
             # Post first, delete second: if posting fails the original is still there.
             view.message = await message.channel.send(
@@ -166,3 +242,20 @@ class DailySlopBot(discord.Client):
             log.warning("Missing Manage Messages in #%s; could not delete score", message.channel)
         except discord.NotFound:
             pass
+
+        await self._maybe_ask_to_share(message)
+
+    async def _maybe_ask_to_share(self, message: discord.Message) -> None:
+        """Ask once, the first time someone who is in 2+ of our servers posts a score."""
+        user_id = message.author.id
+        if not self.db.needs_share_prompt(user_id) or self.mutual_server_count(user_id) < 2:
+            return
+        self.db.mark_prompted(user_id)  # ask only once, even if they ignore it
+        view = SharePromptView(self.db, user_id)
+        view.message = await message.channel.send(
+            f"{message.author.mention}, you're in more than one server that uses this bot. "
+            "Want your scores to show on the leaderboards of those other servers too? "
+            "Only you can answer. Otherwise they stay on the server where you post them. "
+            "You can change this any time with `/sharing`.",
+            view=view,
+        )

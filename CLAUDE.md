@@ -18,8 +18,15 @@ Krillion parser, SQLite storage, and the bot skeleton are built. The Discord lay
 - `src/dailyslop/parsers/`: one module per game. Each parser takes raw message text and
   returns a parsed score (`.puzzle`, `.total`, `.display()`), or `None` if it isn't that game.
 - `games.py`: registry of games and ranking direction. `handler.py`: Discord-free
-  text -> stored score. `db.py`: SQLite (one row per guild/user/game/puzzle).
-  `leaderboard.py`: rendering/paging. `bot.py`: Discord glue only; keep logic out of it.
+  text -> stored score. `db.py`: SQLite (`scores`: one row per guild/user/game/puzzle,
+  where the guild is where it was pasted; `prefs`: each user's cross-server sharing choice).
+  `boards.py`: decides which scores appear on a server's board. `leaderboard.py`:
+  rendering/paging. `bot.py`: Discord glue only; keep logic out of it.
+- **Visibility rule:** a score shows on server G's board if it was pasted in G, or if its
+  author opted in to sharing AND is currently a member of G. Decided at read time, so
+  changing a preference needs no migration. Sharing users get one score per puzzle globally;
+  everyone else one per puzzle per server. Default is private.
+- The bot needs the Message Content *and* Server Members privileged intents.
 - `tests/`: parser tests use real pasted samples. Storage/handler tests use `:memory:` DBs.
 - Bot posts the compact message *before* deleting the original, so a failed post never loses a score.
 

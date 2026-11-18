@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
-from dailyslop.db import Entry
+from dataclasses import dataclass
 
 PAGE_SIZE = 10
 MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
+
+
+@dataclass(frozen=True)
+class Entry:
+    """One leaderboard line."""
+
+    name: str
+    value: str  # already formatted for display, e.g. "365" or "412.5 avg · 8 plays"
 
 
 def page_count(entries: list[Entry], page_size: int = PAGE_SIZE) -> int:

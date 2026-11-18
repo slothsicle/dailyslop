@@ -18,7 +18,10 @@
 - Weekly boards and streaks.
 - Persistent leaderboard buttons (currently expire after 10 minutes / restart).
 - Optionally find a score inside a longer message instead of requiring an exact paste.
-- Multi-server hardening (storage is already keyed by guild).
+- Cross-server sharing with opt-in (prompt + `/sharing`) is done and tested. Still to check
+  live: run the bot in two real servers that share a member.
+- Revisit the opt-in prompt trigger if it feels wrong in practice (currently: first score
+  posted by someone in 2+ servers running the bot).
 
 ### Open questions
 - Spoiler handling for emoji grids (Wordle).

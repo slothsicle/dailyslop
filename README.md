@@ -48,6 +48,28 @@ posts a short note that disappears after 10 seconds.
 
 - `/leaderboard game:<game> [scope]`: show a leaderboard. Scope is **Latest puzzle**
   (default) or **All-time** (ranked by average score).
+- `/sharing [setting]`: choose whether your scores show on your other servers (see below).
+  With no argument it tells you your current setting.
+
+## Using the bot in more than one server
+
+Each server has its own leaderboard. By default a score shows only on the server where it
+was pasted, and other servers can't see it.
+
+The first time someone who is in two or more servers running the bot pastes a score, the bot
+asks them (once, in the channel, and only they can answer) whether to **share across
+servers**. If they say yes:
+
+- their scores appear on the leaderboard of every server they're a member of that uses the
+  bot, even servers where they never posted;
+- people only appear on servers they belong to, so someone who is only in server Y never
+  shows up on server X's board;
+- they get one score per puzzle everywhere, so pasting the same puzzle in a second server
+  counts as a repeat;
+- names are the person's nickname in the server being viewed.
+
+If they say no, or ignore the question, they stay private. They can switch either way at any
+time with `/sharing`, and the change applies to their earlier scores too.
 
 ## Setup
 
@@ -57,8 +79,9 @@ posts a short note that disappears after 10 seconds.
    create a **New Application**.
 2. Open the **Bot** tab and copy the token (**Reset Token** if you need a new one). Treat
    it like a password.
-3. On the same tab, turn on **Message Content Intent** (under *Privileged Gateway
-   Intents*). The bot can't read score pastes without it.
+3. On the same tab, turn on **Message Content Intent** and **Server Members Intent**
+   (under *Privileged Gateway Intents*). Without the first, the bot can't read score
+   pastes. Without the second, it can't tell who is a member of which server.
 4. Invite the bot with this URL, replacing `YOUR_CLIENT_ID` with the Application ID from
    the **General Information** tab:
 
@@ -126,4 +149,5 @@ entry to `games.py`.
   `/leaderboard` again for a fresh one.
 - A paste with extra text around it (like a comment above the score) is not recognized, so
   the bot leaves it alone.
-- One server at a time is the tested setup.
+- Cross-server sharing is covered by tests, but I've only run the live bot in one server so
+  far.
