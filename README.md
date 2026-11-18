@@ -84,6 +84,9 @@ cp .env.example .env     # then edit .env and set DISCORD_TOKEN
 python -m dailyslop
 ```
 
+To keep it running 24/7, see [docs/deploy.md](docs/deploy.md) (Google Cloud e2-micro with
+systemd and daily backups).
+
 ### Configuration
 
 Set these in `.env`:

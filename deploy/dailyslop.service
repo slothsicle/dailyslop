@@ -1,0 +1,25 @@
+[Unit]
+Description=dailyslop Discord bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dailyslop
+Group=dailyslop
+WorkingDirectory=/opt/dailyslop
+ExecStart=/opt/dailyslop/.venv/bin/python -m dailyslop
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+# Hardening: the bot only needs to read its code and write its data directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/dailyslop/data
+
+[Install]
+WantedBy=multi-user.target
