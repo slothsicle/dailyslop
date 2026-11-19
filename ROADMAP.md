@@ -28,6 +28,9 @@
   verification docs are brought up to date.
 - **v0.5.0**: Wordle and Connections auto-posts keep the poster's original grid above the
   leaderboard (shown in the post only, not stored).
+- **v0.5.1**: auto-posts show the board for the puzzle just pasted, so a player in a timezone ahead
+  no longer hides the day everyone else is on (#1); `/leaderboard` Daily gets Earlier day / Later
+  day buttons.
 
 ## Needs verification
 `bot.py` has no unit tests, so the first live use of each feature is the test. Seen working live:
