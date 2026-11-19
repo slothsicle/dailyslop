@@ -14,6 +14,8 @@
   board); extras on a second line under each player; 5 players per page.
 - **v0.3.1 / v0.3.2**: Chainle shows `71%` instead of `beat 71%` (stored rows migrated on
   start); boards are normal text again, with names never truncated.
+- **v0.3.3**: docs refresh; README has an "Adding it to your server" section and the Discord-
+  provided install link.
 
 ## Needs verification
 Everything in `bot.py` is tested offline only, so the first live use of each is a test:
