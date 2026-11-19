@@ -51,6 +51,20 @@ the overwrite prompt) is only tested offline, see ROADMAP.md. Next games are in 
 - `tests/`: parser tests use real pasted samples. Storage/handler tests use `:memory:` DBs.
 - Bot posts the compact message *before* deleting the original, so a failed post never loses a score.
 
+## Releases
+Whenever work is merged into `main` and pushed, version it in the same step (don't wait to be
+asked). Following how v0.1.0 and v0.2.0 were cut:
+1. Pick the bump: **minor** (0.2.0 -> 0.3.0) for a new game, command, or user-visible feature;
+   **patch** (0.2.0 -> 0.2.1) for bug fixes, parser corrections, docs, or internal cleanups.
+   A schema migration alone is not a reason for a minor bump.
+2. Edit `version` in `pyproject.toml`; update the "Done" list in `ROADMAP.md` (add a line for
+   the new version, or fold small fixes into it).
+3. Run `pytest` and `ruff check .` first. Commit as `Release vX.Y.Z`, then
+   `git tag vX.Y.Z` and `git push origin main vX.Y.Z`.
+4. If the release adds a migration, say so in the deploy instructions and remind the user to
+   check the latest backup in `/opt/dailyslop/backups` first.
+Only tag `main`. If unsure whether a change is minor or patch, pick patch and say which.
+
 ## Conventions
 - Adding a game = adding one parser module plus its tests.
 - Parsers are pure functions with no Discord or database code, so they stay easy to test.
