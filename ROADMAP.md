@@ -17,6 +17,8 @@
   daily boards put the emoji/round scores on a second line under each player; 5 players per page.
 - **v0.3.1**: names get up to 20 columns on boards (adaptive width); Chainle shows `71%`, not
   `beat 71%` (stored rows are migrated on start).
+- **v0.3.2**: boards are normal text again (no monospace table); extras stay on a second line;
+  names are never truncated.
 
 ## Needs verification with real posts
 - **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)` in the sanity check, inferred from
