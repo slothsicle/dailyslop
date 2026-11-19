@@ -170,6 +170,7 @@ The bot should now show as online in your server.
 | Stop | `sudo systemctl stop dailyslop` |
 | Run a backup now | `sudo systemctl start dailyslop-backup` |
 | List backups | `ls -l /opt/dailyslop/backups` |
+| Check backups are healthy | `sudo bash /opt/dailyslop/deploy/check-backup.sh` |
 
 ### Updating the bot
 
