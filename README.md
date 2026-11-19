@@ -84,6 +84,10 @@ time with `/sharing`, and the change applies to their earlier scores too.
 
 ## Setup
 
+**Just want to add the bot to your server?** See
+[docs/add-to-your-server.md](docs/add-to-your-server.md). The rest of this section is for running
+your own copy.
+
 ### 1. Create the Discord bot
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and
