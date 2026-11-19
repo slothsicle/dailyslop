@@ -37,6 +37,7 @@ class ConnectionsScore:
     total: int  # guesses made, or 8 for a fail
     solved_groups: int
     path: str = ""  # one mark per guess: the group's colour if solved, ❌ for a mistake
+    rows: tuple[str, ...] = ()  # the pasted grid, one string of squares per guess
 
     @property
     def won(self) -> bool:
@@ -51,6 +52,11 @@ class ConnectionsScore:
     @property
     def extra(self) -> str:
         return self.path  # shown on the daily board
+
+    @property
+    def grid(self) -> str:
+        """The original grid, shown above the board in the bot's post (never stored)."""
+        return "\n".join(self.rows)
 
     def display(self) -> str:
         if not self.won:
@@ -96,5 +102,6 @@ def parse(text: str) -> ConnectionsScore | None:
         puzzle=int(puzzle.group(1).replace(",", "")),
         total=len(guesses) if won else FAIL_TOTAL,
         solved_groups=len(solved),
+        rows=tuple(guesses),
         path="".join(r[0] if len(set(r)) == 1 else MISTAKE for r in guesses),
     )

@@ -30,6 +30,7 @@ class WordleScore:
     solved: bool
     hard: bool
     greens: tuple[int, ...] = ()  # green squares in each guess, in order
+    rows: tuple[str, ...] = ()  # the pasted grid, one string of squares per guess
 
     @property
     def detail(self) -> str:
@@ -39,6 +40,11 @@ class WordleScore:
     def extra(self) -> str:
         """One-line summary for the daily board (the full grid is too wide): greens per guess."""
         return "🟩 " + "·".join(str(g) for g in self.greens) if self.greens else ""
+
+    @property
+    def grid(self) -> str:
+        """The original grid, shown above the board in the bot's post (never stored)."""
+        return "\n".join(self.rows)
 
     def display(self) -> str:
         shown = f"{self.total}" if self.solved else "X"
@@ -80,4 +86,5 @@ def parse(text: str) -> WordleScore | None:
         solved=solved,
         hard=header.group(3) == "*",
         greens=tuple(sum(ch in GREENS for ch in r) for r in rows if r is not None),
+        rows=tuple("".join(r) for r in rows if r is not None),
     )

@@ -26,6 +26,8 @@
 - **v0.4.0**: hardening and docs round. The database and backups are private to the bot's user
   (`UMask=0077`; the deploy docs now go through `sudo` for backups), and the deploy, security and
   verification docs are brought up to date.
+- **v0.5.0**: Wordle and Connections auto-posts keep the poster's original grid above the
+  leaderboard (shown in the post only, not stored).
 
 ## Needs verification
 `bot.py` has no unit tests, so the first live use of each feature is the test. Seen working live:

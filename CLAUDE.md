@@ -49,6 +49,8 @@ real posts or a live server is listed in `ROADMAP.md`.
 - **`/leaderboard game`** takes only the game; the period is a row of buttons. The reply deletes
   itself after 5 minutes (`LEADERBOARD_TTL`). The bot's auto-posts are always the daily board and
   have no period buttons.
+- **Grid games:** Wordle and Connections scores expose `.grid` (the pasted rows). `bot.post_share`
+  puts it between the header line and the comment, above the board embed. Not stored in the DB.
 - **Replacing posts:** posting a score deletes the bot's previous post for the same
   channel + game + puzzle (never another game or day, never anyone else's messages). A new post
   carries only its own author's comment, so a replaced post's comment is lost; that is

@@ -390,6 +390,9 @@ class DailySlopBot(discord.Client):
             lambda scope: board_for(self.db, guild, game, scope), period_buttons=False
         )
         content = f"**{name}** · {share.score.display()}"
+        grid = getattr(share.score, "grid", "")  # Wordle/Connections: keep their original grid
+        if grid:
+            content += f"\n{grid}"
         if quote:
             content += f"\n{quote}"
         sent = await channel.send(

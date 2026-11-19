@@ -149,3 +149,10 @@ def test_wordle_summary_is_greens_per_guess():
     assert wordle.parse(W_HARD).extra == "🟩 0·5"
     assert wordle.parse(W_HUNDRED).extra == "🟩 5"
     assert wordle.parse(W_FAIL).extra == "🟩 1·1·1·1·1·1"
+
+
+def test_grids_are_kept_as_pasted_for_the_autopost():
+    assert wordle.parse(W3).grid == "⬛🟨⬛⬛⬛\n🟨⬛🟩⬛⬛\n🟩🟩🟩🟩🟩"
+    assert connections.parse(C_TWO_MISSES).grid == (
+        "🟨🟩🟨🟨\n🟨🟨🟨🟨\n🟩🟩🟩🟩\n🟦🟪🟦🟦\n🟦🟦🟦🟦\n🟪🟪🟪🟪"
+    )

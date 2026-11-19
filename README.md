@@ -48,7 +48,8 @@ The bot replaces it with:
 > 🦑🦑🐟🫧🦑🦑🏮
 
 Each game's daily board also shows its extras (emoji, round scores, squares, ...) on a second
-line under each name.
+line under each name. For the grid games (Wordle, Connections) the bot's post also repeats the
+poster's original grid above the leaderboard.
 
 **Comments are kept.** Text above or below a score is reposted as a quote with the first new
 score, with mentions turned off so a comment can never ping anyone. Several scores in one
