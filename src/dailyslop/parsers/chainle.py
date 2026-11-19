@@ -39,7 +39,7 @@ class ChainleScore:
 
     @property
     def detail(self) -> str:
-        return f"beat {self.percentile}%"
+        return f"{self.percentile}%"  # beat this share of players
 
     @property
     def extra(self) -> str:

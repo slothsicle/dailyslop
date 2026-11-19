@@ -228,7 +228,7 @@ def test_chainle_is_detected_and_board_shows_total_and_percentile(db):
     post(db, BOB, "bob", CHAINLE_90_LOW)
     title, entries = build_board(db, X, GAMES["chainle"], "daily", {ANN, BOB})
     assert title == "Chainle #90"
-    assert entries == [Entry("ann", "2,837 · beat 71%"), Entry("bob", "1,200 · beat 20%")]
+    assert entries == [Entry("ann", "2,837 · 71%"), Entry("bob", "1,200 · 20%")]
 
 
 def test_games_do_not_mix_on_a_board(db):
@@ -236,7 +236,7 @@ def test_games_do_not_mix_on_a_board(db):
     post(db, ANN, "ann", K125_365)  # same user, different game
     assert board(db, X, {ANN})[1] == [Entry("ann", "365")]
     assert build_board(db, X, GAMES["chainle"], "daily", {ANN})[1] == [
-        Entry("ann", "2,837 · beat 71%")
+        Entry("ann", "2,837 · 71%")
     ]
 
 

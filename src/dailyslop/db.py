@@ -57,7 +57,7 @@ class Score:
     puzzle: int
     total: int
     created_at: float
-    detail: str = ""  # extra text shown next to the total, e.g. "beat 71%"
+    detail: str = ""  # extra text shown next to the total, e.g. Chainle's "71%"
     extra: str = ""  # shown only on a single day's board, e.g. Krillion's emoji row
 
 
@@ -77,6 +77,11 @@ class Database:
         if "extra" not in columns:  # added with the daily Krillion emoji
             self.conn.execute("ALTER TABLE scores ADD COLUMN extra TEXT NOT NULL DEFAULT ''")
         self._backfill_extra()
+        # Chainle used to store "beat 71%"; it is now just "71%". Idempotent.
+        self.conn.execute(
+            "UPDATE scores SET detail = substr(detail, 6) "
+            "WHERE game = 'chainle' AND detail LIKE 'beat %'"
+        )
         self.conn.commit()
 
     # Games whose `extra` was only ever stored inside `display` ("Krillion #126 · 375 · 🐟🦑...",

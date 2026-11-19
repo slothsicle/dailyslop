@@ -8,8 +8,8 @@ SAMPLE = "Chainle #90 · 2,837 \nBeat 71% of players\n\nhttps://chainle.io/"
 def test_real_sample():
     score = parse(SAMPLE)
     assert score == ChainleScore(puzzle=90, total=2837, percentile=71)
-    assert score.display() == "Chainle #90 · 2,837 · beat 71%"
-    assert score.detail == "beat 71%"
+    assert score.display() == "Chainle #90 · 2,837 · 71%"
+    assert score.detail == "71%"
 
 
 def test_link_is_optional():
@@ -81,7 +81,7 @@ def test_real_posts(text, puzzle, total, percentile):
 
 
 def test_real_post_display_drops_the_decoration():
-    assert parse(REAL_POSTS[1][0]).display() == "Chainle #90 · 2,371 · beat 39%"
+    assert parse(REAL_POSTS[1][0]).display() == "Chainle #90 · 2,371 · 39%"
 
 
 def test_squares_glued_to_some_other_text_are_still_rejected():

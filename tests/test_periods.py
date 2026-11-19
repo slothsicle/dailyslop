@@ -230,7 +230,7 @@ def test_boards_without_emoji_keep_the_medal_layout():
 def test_names_get_more_room_when_the_total_column_is_narrow():
     long_name = "Bartholomew Featherstonehaugh"
     short = render_page([Entry(long_name, "375", "🐟")], 0).splitlines()[1]
-    wide = render_page([Entry(long_name, "2,837 · beat 71%", "🟥")], 0).splitlines()[1]
+    wide = render_page([Entry(long_name, "2,837 · 71%", "🟥")], 0).splitlines()[1]
     assert short.startswith(" 1. Bartholomew Feather")  # roomy: Krillion-sized totals
     assert len(wide.split("…")[0]) < len(short.split("…")[0])  # Chainle's is tighter
 
@@ -238,6 +238,28 @@ def test_names_get_more_room_when_the_total_column_is_narrow():
 def test_a_first_line_never_exceeds_the_budget_unless_the_name_floor_forces_it():
     from dailyslop.leaderboard import LINE_BUDGET, NAME_MIN
 
-    for value in ("375", "1,000", "2,837 · beat 71%"):
+    for value in ("375", "1,000", "2,837 · 71%"):
         line = render_page([Entry("x" * 60, value, "🟥")], 0).splitlines()[1]
         assert text_width(line) <= max(LINE_BUDGET, 4 + NAME_MIN + 2 + len(value))
+
+
+def test_old_chainle_details_lose_the_word_beat_and_stay_that_way(tmp_path):
+    path = tmp_path / "chainle.db"
+    db = Database(path)
+    for uid, detail in ((1, "beat 71%"), (2, "20%")):
+        db.conn.execute(
+            "INSERT INTO scores (guild_id, user_id, user_name, game, puzzle, total, display, "
+            "created_at, detail) VALUES (1, ?, 'x', 'chainle', 90, 1000, 'd', 1.0, ?)",
+            (uid, detail),
+        )
+    db.conn.execute(  # another game's detail must never be touched
+        "INSERT INTO scores (guild_id, user_id, user_name, game, puzzle, total, display, "
+        "created_at, detail) VALUES (1, 3, 'x', 'wordle', 9, 3, 'd', 1.0, 'beat this')"
+    )
+    db.conn.commit()
+    db.close()
+    for _ in range(2):  # twice: harmless
+        again = Database(path)
+        rows = dict(again.conn.execute("SELECT user_id, detail FROM scores"))
+        assert rows == {1: "71%", 2: "20%", 3: "beat this"}
+        again.close()
