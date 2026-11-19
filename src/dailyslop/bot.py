@@ -22,8 +22,11 @@ VIEW_TIMEOUT = 600  # seconds before buttons stop working
 LEADERBOARD_TTL = 300  # /leaderboard replies delete themselves this many seconds after posting
 
 
-def board_for(db: Database, guild: discord.Guild, game: Game, scope: str) -> tuple[str, list[Entry]]:
-    """Build one server's board, using that server's member list and nicknames."""
+def board_for(
+    db: Database, guild: discord.Guild, game: Game, scope: str, puzzle: int | None = None
+) -> tuple[str, list[Entry]]:
+    """Build one server's board, using that server's member list and nicknames.
+    `puzzle` pins the daily board to one puzzle instead of the latest."""
     members = guild.members  # needs the Server Members intent
     return build_board(
         db,
@@ -32,6 +35,7 @@ def board_for(db: Database, guild: discord.Guild, game: Game, scope: str) -> tup
         scope,
         member_ids={m.id for m in members},
         names={m.id: m.display_name for m in members},
+        puzzle=puzzle,
     )
 
 
@@ -387,7 +391,8 @@ class DailySlopBot(discord.Client):
         game and puzzle in this channel. Caller must hold the channel lock."""
         game = share.game
         view = LeaderboardView(
-            lambda scope: board_for(self.db, guild, game, scope), period_buttons=False
+            lambda scope: board_for(self.db, guild, game, scope, share.score.puzzle),
+            period_buttons=False,
         )
         content = f"**{name}** · {share.score.display()}"
         grid = getattr(share.score, "grid", "")  # Wordle/Connections: keep their original grid

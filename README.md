@@ -47,6 +47,9 @@ The bot replaces it with:
 > 🥇 **slothsicle** · 365
 > 🦑🦑🐟🫧🦑🦑🏮
 
+The board under a post is for the puzzle that was pasted, so a player in a timezone ahead of you
+(already on tomorrow's MapTap, say) doesn't hide the day everyone else is still playing.
+
 Each game's daily board also shows its extras (emoji, round scores, squares, ...) on a second
 line under each name. For the grid games (Wordle, Connections) the bot's post also repeats the
 poster's original grid above the leaderboard.
@@ -73,7 +76,7 @@ message is left alone. (The first score ever posted for a game is always accepte
   **Daily** (the latest puzzle, raw totals), **Weekly** (the last 7 puzzle days),
   **Monthly** (the current calendar month, UTC) and **All-time**. Weekly and longer rank by
   average. Daily shows 5 players per page and the others 10. The reply deletes itself after
-  5 minutes.
+  5 minutes. Daily here always means the newest puzzle anyone has posted.
 - `/sharing [setting]`: choose whether your scores show on your other servers (see below).
   With no setting it shows the current one.
 - `/purge [limit] [all]`: anyone can run it. Deletes the bot's old posts in the current channel

@@ -63,6 +63,26 @@ def test_daily_is_the_latest_puzzle_and_keeps_the_emoji(db):
     assert entries == [Entry("u11", "400", "🌟🌟🌟🌟⬛⬛⬛"), Entry("u10", "365", EMOJI)]
 
 
+def test_daily_can_be_pinned_to_an_older_puzzle(db):
+    """A player in a timezone ahead posts the next puzzle; a post for the earlier puzzle must
+    still show that puzzle's board, not the newer one."""
+    add(db, ANN, 125, 100, extra="old")
+    add(db, BOB, 125, 200, extra="older")
+    add(db, CY, 126, 365)
+    title, entries = build_board(db, G, K, "daily", {ANN, BOB, CY}, None, None, puzzle=125)
+    assert title == "Krillion #125"
+    assert entries == [Entry("u11", "200", "older"), Entry("u10", "100", "old")]
+    assert board(db, "daily")[0] == "Krillion #126"  # unpinned is still the latest
+
+
+def test_pinning_a_puzzle_does_not_change_the_weekly_anchor(db):
+    add(db, ANN, 100, 100)  # outside the 7 puzzle window ending at 126
+    add(db, ANN, 126, 300)
+    title, entries = build_board(db, G, K, "weekly", {ANN}, None, None, puzzle=100)
+    assert title == "Krillion · last 7 days"
+    assert [e.value for e in entries] == ["300.0 avg · 1 play"]
+
+
 # --- weekly: the last 7 puzzle days, not calendar time ----------------------------------------
 
 
