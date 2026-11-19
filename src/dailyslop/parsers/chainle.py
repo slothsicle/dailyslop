@@ -20,6 +20,7 @@ import re
 from dataclasses import dataclass
 
 MAX_SCORE = 5000
+SQUARES = "🟥🟧🟨🟩"  # per-round result colours, worst to best
 
 # The score can be followed by decorative symbols (real posts end the line with 🔗).
 _HEADER = re.compile(
@@ -34,10 +35,15 @@ class ChainleScore:
     puzzle: int
     total: int
     percentile: int  # "beat N% of players"
+    squares: str = ""  # the per-round colour squares, if the post had them
 
     @property
     def detail(self) -> str:
         return f"beat {self.percentile}%"
+
+    @property
+    def extra(self) -> str:
+        return self.squares  # shown on the daily board
 
     def display(self) -> str:
         return f"Chainle #{self.puzzle} · {self.total:,} · {self.detail}"
@@ -64,12 +70,15 @@ def parse(text: str) -> ChainleScore | None:
         return None
 
     percentile = None
+    squares = ""
     for line in lines[1:]:
         beat = _BEAT.match(line)
         if beat and percentile is None:
             percentile = int(beat.group(1))
         elif not _ignorable(line):
             return None  # unexpected text: not a clean share
+        else:
+            squares += "".join(ch for ch in line if ch in SQUARES)
     if percentile is None or percentile > 100:
         return None
 
@@ -77,4 +86,6 @@ def parse(text: str) -> ChainleScore | None:
     if total > MAX_SCORE:
         return None
 
-    return ChainleScore(puzzle=int(header.group(1)), total=total, percentile=percentile)
+    return ChainleScore(
+        puzzle=int(header.group(1)), total=total, percentile=percentile, squares=squares
+    )

@@ -136,3 +136,9 @@ def test_lowest_guess_count_tops_the_board(tmp_path):
     assert [(e.name, e.value) for e in entries] == [
         ("u2", "3"), ("u1", "4"), ("u3", "7 · failed")
     ]
+
+
+def test_connections_path_shows_solve_order_and_mistakes():
+    assert connections.parse(C_PERFECT).extra == "🟨🟩🟦🟪"
+    assert connections.parse(C_TWO_MISSES).extra == "❌🟨🟩❌🟦🟪"
+    assert connections.parse(C_FAIL).extra == "🟨❌❌❌❌"

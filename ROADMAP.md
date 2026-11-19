@@ -8,6 +8,10 @@
   Krillion emoji and MapTap rounds on the daily board; the bot replaces its previous post for a
   puzzle; overwrite-on-repeat prompt; `\` escape; `/leaderboard` replies delete after 5 minutes.
   Everything in `bot.py` is tested offline only; verify live.
+- **v0.2.1**: Chainle squares and a Connections solve-order row on the daily board (Wordle's grid
+  is too wide for one line, so it has none). Chainle/Connections scores stored before this have
+  no row. Also MapTap rounds on the daily board; auto-posts have no period buttons; release
+  convention in CLAUDE.md.
 
 ## Needs verification with real posts
 - **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)` in the sanity check, inferred from

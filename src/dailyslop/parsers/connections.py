@@ -24,6 +24,7 @@ COLOURS = set("🟨🟩🟦🟪")
 GROUPS = 4
 MAX_MISTAKES = 4
 FAIL_TOTAL = 8
+MISTAKE = "❌"
 MAX_ROWS = 7  # a win with 3 mistakes, or a fail with 4 mistakes and 3 groups solved
 
 _HEADER = re.compile(r"^Connections$")
@@ -35,6 +36,7 @@ class ConnectionsScore:
     puzzle: int
     total: int  # guesses made, or 8 for a fail
     solved_groups: int
+    path: str = ""  # one mark per guess: the group's colour if solved, ❌ for a mistake
 
     @property
     def won(self) -> bool:
@@ -48,7 +50,7 @@ class ConnectionsScore:
 
     @property
     def extra(self) -> str:
-        return ""
+        return self.path  # shown on the daily board
 
     def display(self) -> str:
         if not self.won:
@@ -94,4 +96,5 @@ def parse(text: str) -> ConnectionsScore | None:
         puzzle=int(puzzle.group(1).replace(",", "")),
         total=len(guesses) if won else FAIL_TOTAL,
         solved_groups=len(solved),
+        path="".join(r[0] if len(set(r)) == 1 else MISTAKE for r in guesses),
     )

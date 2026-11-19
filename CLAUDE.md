@@ -24,7 +24,7 @@ the overwrite prompt) is only tested offline, see ROADMAP.md. Next games are in 
   text -> stored score. `db.py`: SQLite (`scores`: one row per guild/user/game/puzzle,
   where the guild is where it was pasted; `prefs`: each user's cross-server sharing choice;
   `posts`: the bot's latest board message per channel/game/puzzle). `scores.extra` is text shown
-  only on a single day's board (Krillion's emoji row, MapTap's five round scores). The migration
+  only on a single day's board (Krillion's emoji row, MapTap's five round scores, Chainle's squares, Connections' solve-order row). The migration
   fills `extra` for older rows from `display` on every start (idempotent).
   `boards.py`: decides which scores appear on a server's board. `leaderboard.py`:
   rendering/paging. `bot.py`: Discord glue only; keep logic out of it.

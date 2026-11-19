@@ -30,9 +30,9 @@ def test_total_without_comma_and_low_scores():
 
 def test_round_emoji_lines_are_ignored_wherever_they_appear():
     with_squares = "Chainle #90 · 2,837\n🟩🟩🟨🟧🟥\nBeat 71% of players\n\nhttps://chainle.io/"
-    assert parse(with_squares) == ChainleScore(90, 2837, 71)
+    assert parse(with_squares) == ChainleScore(90, 2837, 71, squares="🟩🟩🟨🟧🟥")
     after = "Chainle #90 · 2,837\nBeat 71% of players\n🟩🟩🟨🟧🟥"
-    assert parse(after) == ChainleScore(90, 2837, 71)
+    assert parse(after) == ChainleScore(90, 2837, 71, squares="🟩🟩🟨🟧🟥")
 
 
 def test_maximum_score_is_accepted_but_not_beyond():
@@ -76,7 +76,8 @@ REAL_POSTS = [
 
 @pytest.mark.parametrize("text,puzzle,total,percentile", REAL_POSTS)
 def test_real_posts(text, puzzle, total, percentile):
-    assert parse(text) == ChainleScore(puzzle=puzzle, total=total, percentile=percentile)
+    score = parse(text)
+    assert (score.puzzle, score.total, score.percentile) == (puzzle, total, percentile)
 
 
 def test_real_post_display_drops_the_decoration():
@@ -86,3 +87,19 @@ def test_real_post_display_drops_the_decoration():
 def test_squares_glued_to_some_other_text_are_still_rejected():
     assert parse("Chainle #90 · 2,371 🔗\nBeat 39% of players\n🟥🟧🟨🟩🟧nice one") is None
     assert parse("Chainle #90 · 2,371 🔗\nBeat 39% of players\n🟥🟧🟨🟩🟧https://example.com/") is None
+
+
+# --- the squares are kept for the daily board ---------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "squares"),
+    [
+        (REAL_POSTS[1][0], "🟥🟧🟨🟩🟧"),  # squares glued to the link
+        (REAL_POSTS[-1][0], "🟨🟥🟨🟨🟨"),  # squares on their own line
+        ("Chainle #90 · 2,837\nBeat 71% of players\n\nhttps://chainle.io/", ""),  # none posted
+    ],
+)
+def test_squares_are_captured(text, squares):
+    score = parse(text)
+    assert score.squares == squares and score.extra == squares
