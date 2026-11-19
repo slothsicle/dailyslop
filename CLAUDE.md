@@ -50,8 +50,9 @@ real posts or a live server is listed in `ROADMAP.md`.
   itself after 5 minutes (`LEADERBOARD_TTL`). The bot's auto-posts are always the daily board and
   have no period buttons. An auto-post shows the board for the puzzle that was just pasted
   (`build_board(..., puzzle=...)`), not the latest one, so someone in a timezone ahead (already on
-  the next date) doesn't hide the day everyone else is still playing. `/leaderboard` has no such
-  context and still shows the latest puzzle.
+  the next date) doesn't hide the day everyone else is still playing. `/leaderboard` opens on the latest
+  puzzle; its Daily board has Earlier day / Later day buttons (`boards.daily_puzzles`) to step
+  through the puzzles that have scores.
 - **Grid games:** Wordle and Connections scores expose `.grid` (the pasted rows). `bot.post_share`
   puts it between the header line and the comment, above the board embed. Not stored in the DB.
 - **Replacing posts:** posting a score deletes the bot's previous post for the same

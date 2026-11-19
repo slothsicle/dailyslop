@@ -76,7 +76,8 @@ message is left alone. (The first score ever posted for a game is always accepte
   **Daily** (the latest puzzle, raw totals), **Weekly** (the last 7 puzzle days),
   **Monthly** (the current calendar month, UTC) and **All-time**. Weekly and longer rank by
   average. Daily shows 5 players per page and the others 10. The reply deletes itself after
-  5 minutes. Daily here always means the newest puzzle anyone has posted.
+  5 minutes. Daily opens on the newest puzzle anyone has posted; **Earlier day** and **Later day** step
+  through older puzzles that have scores.
 - `/sharing [setting]`: choose whether your scores show on your other servers (see below).
   With no setting it shows the current one.
 - `/purge [limit] [all]`: anyone can run it. Deletes the bot's old posts in the current channel

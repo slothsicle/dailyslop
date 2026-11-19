@@ -60,6 +60,13 @@ def _average_entries(
     ]
 
 
+def daily_puzzles(
+    db: Database, guild_id: int, game: Game, member_ids: Collection[int]
+) -> list[int]:
+    """Every puzzle this server's board has a score for, newest first."""
+    return sorted({s.puzzle for s in visible_scores(db, guild_id, game.key, member_ids)}, reverse=True)
+
+
 def build_board(
     db: Database,
     guild_id: int,

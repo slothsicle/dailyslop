@@ -10,7 +10,7 @@ from collections.abc import Callable
 import discord
 from discord import app_commands
 
-from dailyslop.boards import SCOPES, build_board
+from dailyslop.boards import SCOPES, build_board, daily_puzzles
 from dailyslop.db import Database
 from dailyslop.games import GAMES, Game
 from dailyslop.handler import Handled, handle_message, replace_score
@@ -39,6 +39,11 @@ def board_for(
     )
 
 
+def puzzles_for(db: Database, guild: discord.Guild, game: Game) -> list[int]:
+    """Puzzles this server has scores for, newest first (for the Earlier/Later day buttons)."""
+    return daily_puzzles(db, guild.id, game, {m.id for m in guild.members})
+
+
 def board_embed(title: str, entries: list[Entry], page: int, scope: str) -> discord.Embed:
     size = page_size_for(scope)
     embed = discord.Embed(title=title, description=render_page(entries, page, size))
@@ -59,26 +64,53 @@ class PeriodButton(discord.ui.Button["LeaderboardView"]):
         await self.view.switch(interaction, self.scope)
 
 
+class DayButton(discord.ui.Button["LeaderboardView"]):
+    def __init__(self, step: int) -> None:
+        label = "Earlier day" if step > 0 else "Later day"
+        super().__init__(label=label, style=discord.ButtonStyle.secondary, row=1)
+        self.step = step
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        assert self.view is not None
+        await self.view.shift_day(interaction, self.step)
+
+
 class LeaderboardView(discord.ui.View):
-    """A board with period buttons (daily/weekly/...) on top and page buttons below."""
+    """A board with period buttons (daily/weekly/...) on top and page buttons below.
+
+    With `puzzles` (newest-first puzzle ids) the Daily board also gets Earlier/Later day buttons."""
 
     def __init__(
         self,
-        build: Callable[[str], tuple[str, list[Entry]]],
+        build: Callable[[str, int | None], tuple[str, list[Entry]]],
         scope: str = "daily",
         *,
         period_buttons: bool = True,
+        puzzles: Callable[[], list[int]] | None = None,
     ) -> None:
         super().__init__(timeout=VIEW_TIMEOUT)
-        self.build = build  # scope -> (title, entries), rebuilt fresh on every switch
+        self.build = build  # (scope, puzzle) -> (title, entries), rebuilt fresh on every change
+        self.puzzles_fn = puzzles
+        self.puzzles: list[int] = []
+        self.day = 0  # index into self.puzzles; 0 = the newest
         self.scope = scope
-        self.title, self.entries = build(scope)
         self.page = 0
         self.message: discord.Message | None = None
+        self._rebuild()
         if period_buttons:  # the bot's own auto-posts are always the daily board: no toggle
             for s in SCOPES:
                 self.add_item(PeriodButton(s))
+        if puzzles is not None:
+            self.add_item(DayButton(+1))
+            self.add_item(DayButton(-1))
         self._sync_buttons()
+
+    def _rebuild(self) -> None:
+        if self.puzzles_fn is not None:
+            self.puzzles = self.puzzles_fn()
+            self.day = min(self.day, max(len(self.puzzles) - 1, 0))
+        puzzle = self.puzzles[self.day] if self.day and self.puzzles else None
+        self.title, self.entries = self.build(self.scope, puzzle)
 
     def _sync_buttons(self) -> None:
         last = page_count(self.entries, page_size_for(self.scope)) - 1
@@ -91,6 +123,10 @@ class LeaderboardView(discord.ui.View):
                     if child.scope == self.scope
                     else discord.ButtonStyle.secondary
                 )
+            elif isinstance(child, DayButton):
+                daily = self.scope == "daily"
+                at_end = self.day + 1 >= len(self.puzzles) if child.step > 0 else self.day <= 0
+                child.disabled = not daily or at_end
 
     async def _show(self, interaction: discord.Interaction) -> None:
         self._sync_buttons()
@@ -100,8 +136,15 @@ class LeaderboardView(discord.ui.View):
 
     async def switch(self, interaction: discord.Interaction, scope: str) -> None:
         self.scope = scope
-        self.title, self.entries = self.build(scope)
+        self.day = 0  # every period starts on the newest puzzle
         self.page = 0
+        self._rebuild()
+        await self._show(interaction)
+
+    async def shift_day(self, interaction: discord.Interaction, step: int) -> None:
+        self.day += step
+        self.page = 0
+        self._rebuild()
         await self._show(interaction)
 
     @discord.ui.button(label="◀", style=discord.ButtonStyle.secondary, row=1)
@@ -278,7 +321,10 @@ class DailySlopBot(discord.Client):
         ) -> None:
             guild, chosen = interaction.guild, GAMES[game.value]
             assert guild is not None  # guild_only
-            view = LeaderboardView(lambda scope: board_for(self.db, guild, chosen, scope))
+            view = LeaderboardView(
+                lambda scope, puzzle: board_for(self.db, guild, chosen, scope, puzzle),
+                puzzles=lambda: puzzles_for(self.db, guild, chosen),
+            )
             if not view.entries:
                 await interaction.response.send_message(
                     f"No {chosen.title} scores yet.", ephemeral=True
@@ -391,7 +437,7 @@ class DailySlopBot(discord.Client):
         game and puzzle in this channel. Caller must hold the channel lock."""
         game = share.game
         view = LeaderboardView(
-            lambda scope: board_for(self.db, guild, game, scope, share.score.puzzle),
+            lambda scope, _puzzle: board_for(self.db, guild, game, scope, share.score.puzzle),
             period_buttons=False,
         )
         content = f"**{name}** · {share.score.display()}"
