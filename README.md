@@ -13,8 +13,8 @@ pastes a score, dailyslop:
 If the bot can't fully understand a message, **it leaves it alone**. It never deletes anything
 it couldn't parse.
 
-> **Just want to add the bot to your server?** [Install link](https://discord.com/oauth2/authorize?client_id=1572409841748680875), or see
-> [docs/add-to-your-server.md](docs/add-to-your-server.md) for what to expect.
+> **Just want to add the bot to your server?** Use the [install link](https://discord.com/oauth2/authorize?client_id=1572409841748680875) and see
+> [Adding it to your server](#adding-it-to-your-server).
 
 ## Supported games
 
@@ -90,6 +90,30 @@ If they say yes:
 
 If they say no or ignore the question, they stay private. Either way they can switch with
 `/sharing`, and the change applies to their earlier scores too.
+
+## Adding it to your server
+
+You need the **Manage Server** permission. Open the [install link](https://discord.com/oauth2/authorize?client_id=1572409841748680875), pick your server
+and authorize. The bot asks for View Channels, Send Messages, Embed Links, Read Message History
+and Manage Messages. It does not ask for Administrator, and it ignores direct messages.
+
+It reacts in every channel it can see. To keep it to `#general`, deny **View Channel** to its
+role in the other channels. It reads messages there to spot scores but stores only scores: your
+user ID, display name, the game, puzzle and score, and the extras shown on the daily board.
+Scores stay on the server where they were pasted unless you opt in with `/sharing`.
+
+**If something's off:**
+
+- *Nothing happens on a paste:* the bot can't see the channel, or the paste isn't a complete,
+  valid score (anything it can't fully parse is left alone). If a real score is being ignored,
+  send the raw text to whoever runs the bot, since that is a parser bug.
+- *The compact post appears but the original stays:* the bot lacks Manage Messages in that
+  channel (check channel-level overrides).
+- *A command is missing:* new commands can take a while. Reload Discord. `/purge` only shows
+  for people with Manage Messages.
+
+To remove the bot, kick it or use **Server Settings, then Integrations**. Its stored scores
+stay in the database; ask whoever runs it to delete them.
 
 ## Setup
 

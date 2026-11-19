@@ -73,7 +73,7 @@ what is still unverified against real posts or a live server is listed in `ROADM
   on leftover lines too.
 - Never print or log the Discord token.
 - **Keep the docs current.** When behaviour changes, update `README.md` (user-facing),
-  `docs/add-to-your-server.md` if it affects server admins, this file, and `ROADMAP.md`.
+  this file, and `ROADMAP.md`.
 
 ## Releases
 Whenever work is merged into `main` and pushed, version it in the same step (don't wait to be
