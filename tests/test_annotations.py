@@ -123,3 +123,40 @@ def test_quote_annotation():
     assert quote_annotation("a\nb") == "> a\n> b"
     long = quote_annotation("z" * 1000, limit=50)
     assert long.startswith("> zzz") and long.endswith("…") and len(long) <= 53
+
+
+# --- the backslash escape ---------------------------------------------------------------
+
+ESCAPABLE = [
+    "Krillion #125 🦐\n365\n\n🦑🦑🐟🫧🦑🦑🏮",
+    "Chainle #1 · 2,837 🔗\nBeat 71% of players\n🟥🟧🟨🟩🟩",
+    "www.maptap.gg November 17\n94🏆 92🔥 100🏆 91🔥 90🔥\nFinal score: 929",
+]
+
+
+@pytest.mark.parametrize("share", ESCAPABLE)
+def test_a_score_is_found_without_the_escape(share):
+    assert find_shares(share) is not None
+
+
+@pytest.mark.parametrize("share", ESCAPABLE)
+def test_backslash_before_the_paste_makes_the_bot_ignore_it(share):
+    assert find_shares("\\" + share) is None
+    assert find_shares("  \\" + share) is None
+
+
+@pytest.mark.parametrize("share", ESCAPABLE)
+def test_backslash_before_the_paste_below_a_comment_also_ignores_it(share):
+    assert find_shares("look at this\n\\" + share) is None
+
+
+def test_backslash_before_the_comment_ignores_the_whole_message():
+    assert find_shares("\\look at this\n" + ESCAPABLE[0]) is None
+
+
+def test_backslash_before_one_of_two_scores_ignores_the_message():
+    assert find_shares(ESCAPABLE[0] + "\n\\" + ESCAPABLE[1]) is None
+
+
+def test_a_backslash_mid_comment_does_not_matter():
+    assert find_shares("lol \\o/\n" + ESCAPABLE[0]) is not None

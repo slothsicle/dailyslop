@@ -12,6 +12,7 @@ from dailyslop.games import GAMES, Game
 # so we leave it alone instead of deleting it.
 MAX_LINES = 30
 MAX_ANNOTATION_CHARS = 500
+ESCAPE = "\\"  # put this before a paste to make the bot ignore the message
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,8 @@ def find_shares(text: str) -> tuple[list[tuple[Game, Any]], str] | None:
     lines = [ln.strip() for ln in text.strip().splitlines() if ln.strip()]
     if not lines or len(lines) > MAX_LINES:
         return None
+    if lines[0].startswith(ESCAPE):  # a backslash in front of the message opts out entirely
+        return None
 
     consumed = [False] * len(lines)
     found: list[tuple[int, Game, Any]] = []
@@ -70,7 +73,16 @@ def find_shares(text: str) -> tuple[list[tuple[Game, Any]], str] | None:
 
     if not found:
         return None
-    annotation = "\n".join(ln for ln, used in zip(lines, consumed, strict=True) if not used)
+    # A backslash in front of a score block escapes it, like escaping markdown. The whole
+    # message is left alone, not just that block.
+    leftover = [ln for ln, used in zip(lines, consumed, strict=True) if not used]
+    if any(lines[start].startswith(ESCAPE) for start, _, _ in found):
+        return None
+    # Some parsers don't even recognise an escaped block, so it shows up as leftover text.
+    # A leftover line that begins with a backslash means the same thing.
+    if any(ln.startswith(ESCAPE) for ln in leftover):
+        return None
+    annotation = "\n".join(leftover)
     if len(annotation) > MAX_ANNOTATION_CHARS:
         return None
     found.sort(key=lambda item: item[0])
