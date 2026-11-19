@@ -84,9 +84,16 @@ asked), as v0.1.0 to v0.3.x were cut:
 2. Edit `version` in `pyproject.toml` and add a line for it to the "Done" list in `ROADMAP.md`.
 3. Run `pytest` and `ruff check .`. Commit as `Release vX.Y.Z`, then `git tag vX.Y.Z` and
    `git push origin main vX.Y.Z`. Only tag `main`.
+   For **minor** bumps only, also publish a GitHub release (tags alone don't show as Releases):
+   `gh release create vX.Y.Z --verify-tag --title vX.Y.Z --notes "<the ROADMAP line>"`.
+   Patches get a tag but no GitHub release.
 4. If the release adds a migration, say so in the deploy instructions and have the user take a
    backup first (`sudo systemctl start dailyslop-backup`). Pushing is the user's call: ask first
    unless they already said to push.
+5. Deploying: `ssh slothbots` works non-interactively from this machine (user `admin`). After the
+   push, ask before deploying unless the user already said to. Then run the update from
+   `docs/deploy.md` (`sudo -u dailyslop git pull`, `sudo systemctl restart dailyslop`, with the
+   backup first if there is a migration) and confirm with `systemctl is-active dailyslop`.
 
 ## Game facts
 - **Krillion** (verified against real posts): `Krillion #<n> 🦐`, the total, then 7 emoji, each a
