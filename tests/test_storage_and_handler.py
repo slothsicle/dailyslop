@@ -299,3 +299,15 @@ def test_old_database_without_detail_column_is_migrated(tmp_path):
     assert post(migrated, 11, "bob", CHAINLE_90, guild_id=1).is_new  # new column is writable
     migrated.close()
     Database(path).close()  # reopening an already-migrated file is fine
+
+
+def test_average_boards_show_ten_rows_per_page_and_daily_five():
+    from dailyslop.leaderboard import AVERAGE_PAGE_SIZE, page_size_for
+
+    assert page_size_for("daily") == PAGE_SIZE == 5
+    for scope in ("weekly", "monthly", "all-time"):
+        assert page_size_for(scope) == AVERAGE_PAGE_SIZE == 10
+    entries = [Entry(f"u{i}", "1.0 avg · 1 play") for i in range(1, 26)]
+    first = render_page(entries, 0, AVERAGE_PAGE_SIZE)
+    assert len(first.splitlines()) == 10 and "u10" in first and "u11" not in first
+    assert page_count(entries, AVERAGE_PAGE_SIZE) == 3

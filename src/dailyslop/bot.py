@@ -14,7 +14,7 @@ from dailyslop.boards import SCOPES, build_board
 from dailyslop.db import Database
 from dailyslop.games import GAMES, Game
 from dailyslop.handler import Handled, handle_message, replace_score
-from dailyslop.leaderboard import Entry, page_count, quote_annotation, render_page
+from dailyslop.leaderboard import Entry, page_count, page_size_for, quote_annotation, render_page
 
 log = logging.getLogger("dailyslop")
 
@@ -35,9 +35,10 @@ def board_for(db: Database, guild: discord.Guild, game: Game, scope: str) -> tup
     )
 
 
-def board_embed(title: str, entries: list[Entry], page: int) -> discord.Embed:
-    embed = discord.Embed(title=title, description=render_page(entries, page))
-    embed.set_footer(text=f"Page {page + 1}/{page_count(entries)}")
+def board_embed(title: str, entries: list[Entry], page: int, scope: str) -> discord.Embed:
+    size = page_size_for(scope)
+    embed = discord.Embed(title=title, description=render_page(entries, page, size))
+    embed.set_footer(text=f"Page {page + 1}/{page_count(entries, size)}")
     return embed
 
 
@@ -76,7 +77,7 @@ class LeaderboardView(discord.ui.View):
         self._sync_buttons()
 
     def _sync_buttons(self) -> None:
-        last = page_count(self.entries) - 1
+        last = page_count(self.entries, page_size_for(self.scope)) - 1
         self.prev_button.disabled = self.page <= 0
         self.next_button.disabled = self.page >= last
         for child in self.children:
@@ -90,7 +91,7 @@ class LeaderboardView(discord.ui.View):
     async def _show(self, interaction: discord.Interaction) -> None:
         self._sync_buttons()
         await interaction.response.edit_message(
-            embed=board_embed(self.title, self.entries, self.page), view=self
+            embed=board_embed(self.title, self.entries, self.page, self.scope), view=self
         )
 
     async def switch(self, interaction: discord.Interaction, scope: str) -> None:
@@ -280,7 +281,7 @@ class DailySlopBot(discord.Client):
                 )
                 return
             await interaction.response.send_message(
-                embed=board_embed(view.title, view.entries, 0),
+                embed=board_embed(view.title, view.entries, 0, view.scope),
                 view=view,
                 delete_after=LEADERBOARD_TTL,  # the channel stays clean; auto-posts are not affected
             )
@@ -393,7 +394,7 @@ class DailySlopBot(discord.Client):
             content += f"\n{quote}"
         sent = await channel.send(
             content,
-            embed=board_embed(view.title, view.entries, 0),
+            embed=board_embed(view.title, view.entries, 0, view.scope),
             view=view,
             allowed_mentions=discord.AllowedMentions.none(),  # a comment must never ping
         )

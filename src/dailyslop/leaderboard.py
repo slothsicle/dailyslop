@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-PAGE_SIZE = 5
+PAGE_SIZE = 5  # daily boards: each player may take two lines (name + extra)
+AVERAGE_PAGE_SIZE = 10  # weekly/monthly/all-time: one line per player
 EXTRA_INDENT = "\u2003\u2003"  # two em spaces: lines the extra up under the name
 MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
 
@@ -16,6 +17,11 @@ class Entry:
     name: str
     value: str  # already formatted for display, e.g. "365" or "412.5 avg · 8 plays"
     extra: str = ""  # shown last, only on single-day boards (Krillion's emoji row)
+
+
+def page_size_for(scope: str) -> int:
+    """Rows per page for a board period."""
+    return PAGE_SIZE if scope == "daily" else AVERAGE_PAGE_SIZE
 
 
 def page_count(entries: list[Entry], page_size: int = PAGE_SIZE) -> int:

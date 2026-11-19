@@ -24,7 +24,7 @@ what is still unverified against real posts or a live server is listed in `ROADM
 - `games.py`: registry of games and ranking direction. `handler.py`: Discord-free
   text -> stored scores, and classifying them (`MessageResult.new/same/changed/keep_original`).
   `boards.py`: decides which scores appear on a server's board and builds each period.
-  `leaderboard.py`: rendering and paging (5 per page). `bot.py`: Discord glue only; keep logic
+  `leaderboard.py`: rendering and paging (5 per page on the daily board, 10 on the weekly/monthly/all-time averages). `bot.py`: Discord glue only; keep logic
   out of it.
 - `db.py`: SQLite. `scores`: one row per guild/user/game/puzzle (the guild is where it was
   pasted). `prefs`: each user's cross-server sharing choice. `posts`: the bot's latest board
