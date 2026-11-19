@@ -15,6 +15,8 @@
 - **v0.2.2**: Wordle shows its greens per guess on the daily board (earlier scores have none).
 - **v0.3.0**: `/purge` (deletes the bot's old posts in a channel, keeps each game's latest board);
   daily boards put the emoji/round scores on a second line under each player; 5 players per page.
+- **v0.3.1**: names get up to 20 columns on boards (adaptive width); Chainle shows `71%`, not
+  `beat 71%` (stored rows are migrated on start).
 
 ## Needs verification with real posts
 - **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)` in the sanity check, inferred from
