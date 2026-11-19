@@ -146,7 +146,7 @@ git clone https://github.com/slothsicle/dailyslop.git
 cd dailyslop
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -r requirements.txt -e .
 
 cp .env.example .env     # then edit .env and set DISCORD_TOKEN
 python -m dailyslop

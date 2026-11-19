@@ -21,6 +21,8 @@
 - **v0.3.5**: a sharing user with the same puzzle stored in several servers (pasted while private)
   now shows the latest paste, not the earliest; repeat checks compare against that copy.
 - **v0.3.6**: weekly, monthly and all-time boards show 10 players per page (daily stays at 5).
+- **v0.3.7**: puzzle numbers from the future are ignored (a forged `#99999` can no longer become
+  the daily board); runtime dependencies pinned in `requirements.txt`, Dependabot enabled.
 
 ## Needs verification
 Everything in `bot.py` is tested offline only, so the first live use of each is a test:

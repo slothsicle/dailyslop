@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,6 +13,8 @@ from dailyslop.games import GAMES, Game
 # so we leave it alone instead of deleting it.
 MAX_LINES = 30
 MAX_ANNOTATION_CHARS = 500
+SECONDS_PER_DAY = 86400
+PUZZLE_SLACK_DAYS = 2  # how far ahead of the expected puzzle a paste may be
 ESCAPE = "\\"  # put this before a paste to make the bot ignore the message
 
 
@@ -120,14 +123,39 @@ def find_shares(text: str) -> tuple[list[tuple[Game, Any]], str] | None:
     return [(game, score) for _, game, score in found], annotation
 
 
+def puzzle_is_plausible(db: Database, game: Game, puzzle: int, now: float) -> bool:
+    """Reject puzzle numbers from the future, so one forged paste can't become the "latest
+    puzzle" and hide everyone's real scores. Every game is daily: the newest puzzle we hold
+    was already out when it was first pasted, so today's number can't be more than the days
+    since then, plus a little slack (time zones, a late paste). With no scores yet for a game
+    there is nothing to compare against, so the first one is accepted.
+    """
+    newest = db.newest_puzzle(game.key)
+    if newest is None:
+        return True
+    latest, first_seen = newest
+    days_since = max(0, int((now - first_seen) // SECONDS_PER_DAY))
+    return puzzle <= latest + days_since + PUZZLE_SLACK_DAYS
+
+
 def handle_message(
-    db: Database, *, guild_id: int, user_id: int, user_name: str, text: str
+    db: Database,
+    *,
+    guild_id: int,
+    user_id: int,
+    user_name: str,
+    text: str,
+    now: float | None = None,
 ) -> MessageResult | None:
     """Store every score in the message. None means: not a score post, leave it alone."""
     extracted = find_shares(text)
     if extracted is None:
         return None
     shares, annotation = extracted
+    now = time.time() if now is None else now
+    # One implausible score and the whole message is left alone (never delete part of it).
+    if not all(puzzle_is_plausible(db, game, score.puzzle, now) for game, score in shares):
+        return None
 
     handled = []
     for game, score in shares:

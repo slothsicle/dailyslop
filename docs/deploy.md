@@ -135,7 +135,7 @@ sudo -u dailyslop git clone git@github.com:slothsicle/dailyslop.git /opt/dailysl
 ```bash
 cd /opt/dailyslop
 sudo -u dailyslop python3 -m venv .venv
-sudo -u dailyslop .venv/bin/pip install -e .
+sudo -u dailyslop .venv/bin/pip install -r requirements.txt -e .
 sudo -u dailyslop mkdir -p data backups
 
 # Create the config. Paste your PRODUCTION token after DISCORD_TOKEN=
@@ -178,7 +178,7 @@ The bot should now show as online in your server.
 cd /opt/dailyslop
 sudo systemctl start dailyslop-backup      # first, if the release notes mention a migration
 sudo -u dailyslop git pull
-sudo -u dailyslop .venv/bin/pip install -e .
+sudo -u dailyslop .venv/bin/pip install -r requirements.txt -e .
 sudo systemctl restart dailyslop
 sleep 5; sudo journalctl -u dailyslop --since "1 min ago" --no-pager
 ```

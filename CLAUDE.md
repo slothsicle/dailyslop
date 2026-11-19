@@ -10,7 +10,9 @@ real server. Everything in `bot.py` is tested offline only (the tests cover the 
 what is still unverified against real posts or a live server is listed in `ROADMAP.md`.
 
 ## Commands
-- Setup: `python -m venv .venv && source .venv/bin/activate && pip install -e '.[dev]'`
+- Setup: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt -e '.[dev]'`
+  (`requirements.txt` pins the runtime dependencies to what production runs; bump it deliberately,
+  Dependabot opens PRs for it)
 - Test: `pytest`
 - Lint: `ruff check .`
 - Config: copy `.env.example` to `.env` and set `DISCORD_TOKEN` (never commit `.env`).
@@ -73,6 +75,10 @@ what is still unverified against real posts or a live server is listed in `ROADM
   whole message. Some parsers search for their header rather than anchor to it, so this is checked
   on leftover lines too.
 - Never print or log the Discord token.
+- **Puzzle numbers are sanity-checked** (`handler.puzzle_is_plausible`): a score whose puzzle is
+  more than ~2 days ahead of what the newest stored puzzle plus elapsed time allows is treated as
+  forged: the whole message is left alone and nothing is stored. The first score for a game is
+  always accepted.
 - **Keep the docs current.** When behaviour changes, update `README.md` (user-facing),
   this file, and `ROADMAP.md`.
 

@@ -243,6 +243,16 @@ class Database:
             )
         return row[0] if row else None
 
+    def newest_puzzle(self, game: str) -> tuple[int, float] | None:
+        """The highest puzzle stored for a game and when it first appeared (earliest paste),
+        or None if the game has no scores yet. Used to sanity-check new puzzle numbers."""
+        row = self.conn.execute(
+            "SELECT puzzle, MIN(created_at) FROM scores WHERE game = ? "
+            "AND puzzle = (SELECT MAX(puzzle) FROM scores WHERE game = ?)",
+            (game, game),
+        ).fetchone()
+        return (row[0], row[1]) if row and row[0] is not None else None
+
     def latest_post_ids(self, channel_id: int) -> set[int]:
         """The bot's current board posts in a channel: the newest puzzle of each game.
         Everything else it posted there is history that /purge may delete."""

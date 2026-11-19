@@ -1,3 +1,4 @@
+import time
 from dataclasses import replace
 
 import pytest
@@ -311,3 +312,51 @@ def test_average_boards_show_ten_rows_per_page_and_daily_five():
     first = render_page(entries, 0, AVERAGE_PAGE_SIZE)
     assert len(first.splitlines()) == 10 and "u10" in first and "u11" not in first
     assert page_count(entries, AVERAGE_PAGE_SIZE) == 3
+
+
+# --- puzzle numbers from the future are ignored ---
+
+DAY = 86400
+K999 = "Krillion #999 🦐\n365\n\n🦑🦑🐟🫧🦑🦑🏮"
+K127 = "Krillion #127 🦐\n385\n\n🦑🏮🦑⬛🦑🦑🦑"
+
+
+def post_at(db, text, now, user_id=ANN):
+    return handle_message(db, guild_id=X, user_id=user_id, user_name="n", text=text, now=now)
+
+
+def test_a_forged_future_puzzle_is_left_alone_and_not_stored(db):
+    t0 = time.time()
+    assert post_at(db, K125_365, t0) is not None
+    assert post_at(db, K999, t0 + 60, user_id=BOB) is None
+    assert db.newest_puzzle("krillion")[0] == 125
+
+
+def test_the_next_days_puzzle_is_accepted_and_a_week_later_too(db):
+    t0 = time.time()
+    post_at(db, K125_365, t0)
+    assert post_at(db, K126_385, t0 + DAY, user_id=BOB) is not None  # tomorrow
+    # A week of silence: the puzzle number moved on by about 7.
+    week = "Krillion #132 🦐\n385\n\n🦑🏮🦑⬛🦑🦑🦑"
+    assert post_at(db, week, t0 + 7 * DAY, user_id=ANN) is not None
+
+
+def test_slack_allows_two_days_ahead_but_not_three(db):
+    t0 = time.time()
+    post_at(db, K125_365, t0)
+    two_ahead = "Krillion #127 🦐\n385\n\n🦑🏮🦑⬛🦑🦑🦑"
+    three_ahead = "Krillion #128 🦐\n385\n\n🦑🏮🦑⬛🦑🦑🦑"
+    assert post_at(db, three_ahead, t0 + 60, user_id=BOB) is None
+    assert post_at(db, two_ahead, t0 + 60, user_id=BOB) is not None
+
+
+def test_the_first_score_for_a_game_is_accepted_whatever_its_number(db):
+    assert post_at(db, K999, time.time()) is not None
+
+
+def test_one_forged_score_leaves_the_whole_message_alone(db):
+    t0 = time.time()
+    post_at(db, K125_365, t0)
+    both = K125_190 + "\n\n" + K999
+    assert post_at(db, both, t0 + 60, user_id=BOB) is None
+    assert db.newest_puzzle("krillion")[0] == 125
