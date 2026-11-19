@@ -291,18 +291,17 @@ class DailySlopBot(discord.Client):
             description="Delete the bot's old posts in this channel (keeps each game's latest board)",
         )
         @app_commands.guild_only()
-        @app_commands.default_permissions(manage_messages=True)
-        @app_commands.describe(limit="How many recent messages to look through (default 200)")
+        @app_commands.rename(all_posts="all")
+        @app_commands.describe(
+            limit="How many recent messages to look through (default 200)",
+            all_posts="Delete every bot post, including each game's latest board",
+        )
         async def purge(
-            interaction: discord.Interaction, limit: app_commands.Range[int, 1, 1000] = 200
+            interaction: discord.Interaction,
+            limit: app_commands.Range[int, 1, 1000] = 200,
+            all_posts: bool = False,
         ) -> None:
             channel = interaction.channel
-            # default_permissions can be loosened by a server admin, so check again here.
-            if not interaction.permissions.manage_messages:
-                await interaction.response.send_message(
-                    "You need the Manage Messages permission to do that.", ephemeral=True
-                )
-                return
             if channel is None or not hasattr(channel, "purge"):
                 await interaction.response.send_message(
                     "I can't purge this kind of channel.", ephemeral=True
@@ -311,12 +310,12 @@ class DailySlopBot(discord.Client):
             await interaction.response.defer(ephemeral=True)
             try:
                 async with self.channel_lock(channel.id):
-                    keep = self.db.latest_post_ids(channel.id)
+                    keep = set() if all_posts else self.db.latest_post_ids(channel.id)
                     deleted = await channel.purge(  # type: ignore[union-attr]
                         limit=limit,
                         check=lambda m: m.author.id == self.user.id and m.id not in keep,
                     )
-                    self.db.forget_old_posts(channel.id)
+                    self.db.forget_posts(channel.id, keep)
             except discord.HTTPException as exc:
                 log.warning("Purge failed in #%s: %s", channel, exc)
                 await interaction.followup.send(
@@ -326,8 +325,9 @@ class DailySlopBot(discord.Client):
                 )
                 return
             await interaction.followup.send(
-                f"Deleted {len(deleted)} old bot message{'s' if len(deleted) != 1 else ''} "
-                f"(looked through the last {limit}). Each game's latest board was kept.",
+                f"Deleted {len(deleted)} bot message{'s' if len(deleted) != 1 else ''} "
+                f"(looked through the last {limit})."
+                + ("" if all_posts else " Each game's latest board was kept."),
                 ephemeral=True,
             )
 

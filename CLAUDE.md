@@ -49,9 +49,9 @@ what is still unverified against real posts or a live server is listed in `ROADM
   channel + game + puzzle (never another game or day, never anyone else's messages). A new post
   carries only its own author's comment, so a replaced post's comment is lost; that is
   accepted. A per-channel lock stops two quick pastes deleting each other's posts.
-- **`/purge [limit]`** (Manage Messages, checked again at runtime): deletes the bot's own
-  messages among the last `limit` (default 200, max 1000), except each game's newest-puzzle post
-  (`db.latest_post_ids`).
+- **`/purge [limit] [all]`** (anyone can run it): deletes the bot's own messages among the last
+  `limit` (default 200, max 1000), except each game's newest-puzzle post (`db.latest_post_ids`);
+  `all:true` deletes those too. Only ever the bot's messages, and scores are never touched.
 - **Repeat pastes:** same puzzle already stored with a different total or `extra` -> a public
   prompt (not ephemeral: Discord only allows that for interactions) with buttons only the poster
   can press. Replace swaps the stored score (for sharing users, in every server) and the post;

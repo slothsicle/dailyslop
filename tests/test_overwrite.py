@@ -148,6 +148,8 @@ def test_forget_old_posts_keeps_only_the_current_ones(db):
     for msg, (game, puzzle) in enumerate([("krillion", 125), ("krillion", 126), ("chainle", 90)], 1):
         db.swap_post(500, game, puzzle, msg)
     db.swap_post(501, "krillion", 1, 9)
-    db.forget_old_posts(500)
+    db.forget_posts(500, db.latest_post_ids(500))
     ids = {r[0] for r in db.conn.execute("SELECT message_id FROM posts")}
     assert ids == {2, 3, 9}  # the other channel is untouched
+    db.forget_posts(500, set())  # purging everything forgets every post in that channel
+    assert {r[0] for r in db.conn.execute("SELECT message_id FROM posts")} == {9}

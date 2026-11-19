@@ -70,9 +70,9 @@ so a wrong paste can be fixed. No answer within 60 seconds keeps the old score.
   average. The reply deletes itself after 5 minutes.
 - `/sharing [setting]`: choose whether your scores show on your other servers (see below).
   With no setting it shows the current one.
-- `/purge [limit]`: needs Manage Messages. Deletes the bot's old posts in the current channel
+- `/purge [limit] [all]`: anyone can run it. Deletes the bot's old posts in the current channel
   (looking back through the last `limit` messages, default 200), keeping each game's latest
-  board. It only ever deletes the bot's own messages.
+  board, or those too with `all:true`. It only deletes the bot's own messages, never scores.
 
 ## Using the bot in more than one server
 
@@ -109,8 +109,7 @@ Scores stay on the server where they were pasted unless you opt in with `/sharin
   send the raw text to whoever runs the bot, since that is a parser bug.
 - *The compact post appears but the original stays:* the bot lacks Manage Messages in that
   channel (check channel-level overrides).
-- *A command is missing:* new commands can take a while. Reload Discord. `/purge` only shows
-  for people with Manage Messages.
+- *A command is missing:* new commands can take a while. Reload Discord.
 
 To remove the bot, kick it or use **Server Settings, then Integrations**. Its stored scores
 stay in the database; ask whoever runs it to delete them.

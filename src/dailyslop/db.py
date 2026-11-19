@@ -253,9 +253,8 @@ class Database:
         ).fetchall()
         return {row[0] for row in rows}
 
-    def forget_old_posts(self, channel_id: int) -> None:
-        """Drop the bookkeeping for posts that are no longer the current ones."""
-        keep = self.latest_post_ids(channel_id)
+    def forget_posts(self, channel_id: int, keep: set[int]) -> None:
+        """Drop the bookkeeping for every post in the channel except the ones in `keep`."""
         rows = self.conn.execute(
             "SELECT message_id FROM posts WHERE channel_id = ?", (channel_id,)
         ).fetchall()
