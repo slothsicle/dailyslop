@@ -214,9 +214,10 @@ def test_an_entry_without_an_extra_gets_no_second_line():
 
 
 def test_long_and_wide_names_are_cut_so_lines_stay_short():
-    assert fit_name("a" * 40) == "a" * 11 + "…"
+    assert fit_name("a" * 40) == "a" * 19 + "…"  # NAME_MAX = 20
+    assert fit_name("a" * 40, 12) == "a" * 11 + "…"
     assert fit_name("Alice") == "Alice"
-    cjk = fit_name("日本語のとても長い名前です")
+    cjk = fit_name("日本語のとても長い名前です", 12)
     assert text_width(cjk) <= 12 and cjk.endswith("…")
     assert "`" not in fit_name("we`ird")
 
@@ -224,3 +225,19 @@ def test_long_and_wide_names_are_cut_so_lines_stay_short():
 def test_boards_without_emoji_keep_the_medal_layout():
     out = render_page([Entry("Alice", "385"), Entry("Bo", "300")], 0)
     assert out == "🥇 **Alice** · 385\n🥈 **Bo** · 300"
+
+
+def test_names_get_more_room_when_the_total_column_is_narrow():
+    long_name = "Bartholomew Featherstonehaugh"
+    short = render_page([Entry(long_name, "375", "🐟")], 0).splitlines()[1]
+    wide = render_page([Entry(long_name, "2,837 · beat 71%", "🟥")], 0).splitlines()[1]
+    assert short.startswith(" 1. Bartholomew Feather")  # roomy: Krillion-sized totals
+    assert len(wide.split("…")[0]) < len(short.split("…")[0])  # Chainle's is tighter
+
+
+def test_a_first_line_never_exceeds_the_budget_unless_the_name_floor_forces_it():
+    from dailyslop.leaderboard import LINE_BUDGET, NAME_MIN
+
+    for value in ("375", "1,000", "2,837 · beat 71%"):
+        line = render_page([Entry("x" * 60, value, "🟥")], 0).splitlines()[1]
+        assert text_width(line) <= max(LINE_BUDGET, 4 + NAME_MIN + 2 + len(value))

@@ -6,7 +6,13 @@ import unicodedata
 from dataclasses import dataclass
 
 PAGE_SIZE = 5
-NAME_WIDTH = 12  # columns; keeps a board line on one row even on a phone
+# Column budget for a board's first line (rank + name + total), so it fits on a phone without
+# wrapping. The name gets whatever the total column leaves, within these limits.
+LINE_BUDGET = 34
+NAME_MIN = 8
+NAME_MAX = 20
+RANK_COLUMNS = 4  # " 1. "
+GAP_COLUMNS = 2
 MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
 
 
@@ -34,7 +40,7 @@ def text_width(text: str) -> int:
     return sum(_char_width(ch) for ch in text)
 
 
-def fit_name(name: str, width: int = NAME_WIDTH) -> str:
+def fit_name(name: str, width: int = NAME_MAX) -> str:
     """Shorten a display name to at most `width` columns, ending in … if it was cut."""
     name = name.replace("`", "'").replace("\n", " ").strip()
     if text_width(name) <= width:
@@ -57,9 +63,10 @@ def _render_table(entries: list[Entry], start: int) -> str:
     """Monospace table: rank, name and total lined up on one line, with the extra (emoji,
     round scores...) on a second line underneath. Keeping them apart means a long row of
     emoji can't wrap awkwardly on a narrow screen."""
-    names = [fit_name(e.name) for e in entries]
-    name_w = max(text_width(n) for n in names)
     value_w = max(text_width(e.value) for e in entries)
+    room = LINE_BUDGET - RANK_COLUMNS - GAP_COLUMNS - value_w
+    names = [fit_name(e.name, max(NAME_MIN, min(NAME_MAX, room))) for e in entries]
+    name_w = max(text_width(n) for n in names)
     indent = " " * 4  # lines the extra up under the name
     lines = []
     for rank, (entry, name) in enumerate(zip(entries, names, strict=True), start=start + 1):

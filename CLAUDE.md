@@ -33,7 +33,8 @@ the overwrite prompt) is only tested offline, see ROADMAP.md. Next games are in 
   changing a preference needs no migration. Sharing users get one score per puzzle globally;
   everyone else one per puzzle per server. Default is private.
 - **Boards** (`boards.SCOPES`): `daily` = the latest puzzle anyone has a score for (raw totals,
-  plus `extra` on a second line under each player); `weekly` = the last 7 *puzzle days* up to that puzzle; `monthly` = the UTC
+  plus `extra` on a second line under each player; the name column is as wide as the line budget
+  allows: `leaderboard.LINE_BUDGET`, 8-20 columns); `weekly` = the last 7 *puzzle days* up to that puzzle; `monthly` = the UTC
   calendar month by when the score was posted; `all-time`. The last three are per-player
   **averages** and never show `extra`. `/leaderboard` takes only the game; the period is a row of
   buttons on the message (the bot's auto-posts do not: they are always the daily board). `/leaderboard` replies delete
