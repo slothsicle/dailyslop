@@ -60,6 +60,13 @@ def _average_entries(
     ]
 
 
+def daily_puzzles(
+    db: Database, guild_id: int, game: Game, member_ids: Collection[int]
+) -> list[int]:
+    """Every puzzle this server's board has a score for, newest first."""
+    return sorted({s.puzzle for s in visible_scores(db, guild_id, game.key, member_ids)}, reverse=True)
+
+
 def build_board(
     db: Database,
     guild_id: int,
@@ -68,10 +75,13 @@ def build_board(
     member_ids: Collection[int],
     names: Mapping[int, str] | None = None,
     now: float | None = None,
+    puzzle: int | None = None,
 ) -> tuple[str, list[Entry]]:
     """Return (title, entries) for one server. scope is one of SCOPES.
 
-    daily    the most recent puzzle anyone has a score for (raw totals; Krillion adds its emoji)
+    daily    `puzzle` if given (the bot's auto-posts pass the puzzle just pasted, so a player
+             in a timezone ahead doesn't hide the day everyone else is still on), otherwise
+             the most recent puzzle anyone has a score for (raw totals; Krillion adds its emoji)
     weekly   the last 7 puzzle days up to that puzzle, averaged
     monthly  scores posted this calendar month (UTC), averaged
     all-time everything, averaged
@@ -107,10 +117,11 @@ def build_board(
         window = [s for s in scores if s.puzzle > latest_puzzle - WEEK_PUZZLES]
         return f"{game.title} · last 7 days", _average_entries(window, sign, names)
 
-    today = [s for s in scores if s.puzzle == latest_puzzle]
+    shown = latest_puzzle if puzzle is None else puzzle
+    today = [s for s in scores if s.puzzle == shown]
     today.sort(key=lambda s: (sign * s.total, s.created_at))
     entries = [
         Entry(names.get(s.user_id, s.user_name), _value(s.total, s.detail), s.extra)
         for s in today
     ]
-    return f"{game.title} {game.puzzle_label(latest_puzzle)}", entries
+    return f"{game.title} {game.puzzle_label(shown)}", entries
