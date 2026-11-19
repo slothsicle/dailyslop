@@ -47,9 +47,8 @@ The bot replaces it with:
 > 🥇 **slothsicle** · 365
 > 🦑🦑🐟🫧🦑🦑🏮
 
-The daily board also shows each player's emoji (Krillion), round scores (MapTap), squares
-(Chainle), solve order (Connections) or greens per guess (Wordle) on a second line under their
-name.
+Each game's daily board also shows its extras (emoji, round scores, squares, ...) on a second
+line under each name.
 
 **Comments are kept.** Text above or below a score is reposted as a quote with the first new
 score, with mentions turned off so a comment can never ping anyone. Several scores in one
@@ -70,7 +69,7 @@ so a wrong paste can be fixed. No answer within 60 seconds keeps the old score.
   **Monthly** (the current calendar month, UTC) and **All-time**. Weekly and longer rank by
   average. The reply deletes itself after 5 minutes.
 - `/sharing [setting]`: choose whether your scores show on your other servers (see below).
-  With no argument it shows your current setting.
+  With no setting it shows the current one.
 - `/purge [limit]`: needs Manage Messages. Deletes the bot's old posts in the current channel
   (looking back through the last `limit` messages, default 200), keeping each game's latest
   board. It only ever deletes the bot's own messages.
@@ -85,11 +84,9 @@ asks them (once, in the channel, and only they can answer) whether to **share ac
 If they say yes:
 
 - their scores appear on the leaderboard of every server they belong to that uses the bot,
-  even ones where they never posted;
-- people only appear on servers they are members of;
-- they get one score per puzzle everywhere, so pasting the same puzzle in a second server
-  counts as a repeat;
-- names are the person's nickname in the server being viewed.
+  even ones where they never posted (and only on servers they are members of);
+- they get one score per puzzle everywhere, so pasting it in a second server counts as a repeat;
+- names are their nickname in the server being viewed.
 
 If they say no or ignore the question, they stay private. Either way they can switch with
 `/sharing`, and the change applies to their earlier scores too.
