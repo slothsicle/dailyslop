@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from dailyslop.parsers import chainle, krillion, maptap
+from dailyslop.parsers import chainle, connections, krillion, maptap, wordle
 
 
 def default_label(puzzle: int) -> str:
@@ -30,4 +30,9 @@ GAMES: dict[str, Game] = {
         "maptap", "MapTap", maptap.parse, higher_is_better=True, puzzle_label=maptap.puzzle_label
     ),
     "chainle": Game("chainle", "Chainle", chainle.parse, higher_is_better=True),
+    # Fewest guesses wins for both of these.
+    "wordle": Game("wordle", "Wordle", wordle.parse, higher_is_better=False),
+    "connections": Game(
+        "connections", "Connections", connections.parse, higher_is_better=False
+    ),
 }

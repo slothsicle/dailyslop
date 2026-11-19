@@ -84,3 +84,13 @@ Lines of any other text make it unparseable, so the bot leaves the message alone
 Header: `Krillion #<n> 🦐`, then the total, then 7 emoji. Each emoji is a rarity tier:
 ⬛ 0, 🫧 10, 🐟 30, 🦑 60, 🏮 85, 🌟 100. The emoji points must sum to the total
 (max 700); if not, treat the post as unparseable.
+
+## Wordle and Connections facts (built from the documented share format, NOT yet verified against real posts)
+- **Wordle:** `Wordle 1,234 3/6` (optional `*` = hard mode; `X/6` = fail) then one 5-square row per
+  guess. The grid must agree with the header (row count, last row green iff solved). Fewest guesses
+  wins; a fail counts as 7 and shows `· failed`.
+- **Connections:** `Connections` / `Puzzle #512` / rows of 4 of 🟨🟩🟦🟪. A one-colour row is a solved
+  group, a mixed row is a mistake; 4 mistakes end the game. Score = guesses made (4 = perfect,
+  max 7 for a win); a fail counts as 8 and shows `· failed · n/4 groups`. Fewest wins. Inconsistent
+  grids (unfinished, a colour solved twice, playing on after 4 mistakes) are left alone.
+- If a real post is rejected, fix the parser rather than assuming the post is wrong.

@@ -19,9 +19,13 @@
 - **Cross-server sharing** is tested offline only. Check live in two real servers that share
   a member.
 
+- **Wordle and Connections** are built from the documented share format only. Collect real
+  posts (hard mode, fails, the colour-blind palette, a Connections fail) and check each parses.
+  Also confirm how they look on a board: Wordle shows `3`, a fail `7 · failed`; Connections shows
+  guesses made (`4 · perfect`).
+
 ## Later
 ### More games
-- **Wordle**: fewest guesses wins. Stable share format.
 
 ### Bot
 - Streaks.
