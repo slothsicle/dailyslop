@@ -29,6 +29,7 @@ class WordleScore:
     total: int  # guesses, or 7 for a fail
     solved: bool
     hard: bool
+    greens: tuple[int, ...] = ()  # green squares in each guess, in order
 
     @property
     def detail(self) -> str:
@@ -36,7 +37,8 @@ class WordleScore:
 
     @property
     def extra(self) -> str:
-        return ""
+        """One-line summary for the daily board (the full grid is too wide): greens per guess."""
+        return "🟩 " + "·".join(str(g) for g in self.greens) if self.greens else ""
 
     def display(self) -> str:
         shown = f"{self.total}" if self.solved else "X"
@@ -77,4 +79,5 @@ def parse(text: str) -> WordleScore | None:
         total=guesses if solved else FAIL_TOTAL,
         solved=solved,
         hard=header.group(3) == "*",
+        greens=tuple(sum(ch in GREENS for ch in r) for r in rows if r is not None),
     )

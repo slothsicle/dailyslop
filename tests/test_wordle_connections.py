@@ -142,3 +142,10 @@ def test_connections_path_shows_solve_order_and_mistakes():
     assert connections.parse(C_PERFECT).extra == "🟨🟩🟦🟪"
     assert connections.parse(C_TWO_MISSES).extra == "❌🟨🟩❌🟦🟪"
     assert connections.parse(C_FAIL).extra == "🟨❌❌❌❌"
+
+
+def test_wordle_summary_is_greens_per_guess():
+    assert wordle.parse(W3).extra == "🟩 0·1·5"
+    assert wordle.parse(W_HARD).extra == "🟩 0·5"
+    assert wordle.parse(W_HUNDRED).extra == "🟩 5"
+    assert wordle.parse(W_FAIL).extra == "🟩 1·1·1·1·1·1"
