@@ -57,15 +57,22 @@ class PeriodButton(discord.ui.Button["LeaderboardView"]):
 class LeaderboardView(discord.ui.View):
     """A board with period buttons (daily/weekly/...) on top and page buttons below."""
 
-    def __init__(self, build: Callable[[str], tuple[str, list[Entry]]], scope: str = "daily") -> None:
+    def __init__(
+        self,
+        build: Callable[[str], tuple[str, list[Entry]]],
+        scope: str = "daily",
+        *,
+        period_buttons: bool = True,
+    ) -> None:
         super().__init__(timeout=VIEW_TIMEOUT)
         self.build = build  # scope -> (title, entries), rebuilt fresh on every switch
         self.scope = scope
         self.title, self.entries = build(scope)
         self.page = 0
         self.message: discord.Message | None = None
-        for s in SCOPES:
-            self.add_item(PeriodButton(s))
+        if period_buttons:  # the bot's own auto-posts are always the daily board: no toggle
+            for s in SCOPES:
+                self.add_item(PeriodButton(s))
         self._sync_buttons()
 
     def _sync_buttons(self) -> None:
@@ -333,7 +340,9 @@ class DailySlopBot(discord.Client):
         """Post one compact score + board, then delete the bot's previous post for the same
         game and puzzle in this channel. Caller must hold the channel lock."""
         game = share.game
-        view = LeaderboardView(lambda scope: board_for(self.db, guild, game, scope))
+        view = LeaderboardView(
+            lambda scope: board_for(self.db, guild, game, scope), period_buttons=False
+        )
         content = f"**{name}** · {share.score.display()}"
         if quote:
             content += f"\n{quote}"
