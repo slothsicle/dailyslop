@@ -47,6 +47,7 @@ With real posts:
   `parsers/maptap.py`.
 - **Chainle.** The 5,000 maximum is stated on chainle.org but the site shows no share text, so
   the parser comes from four real posts. Still unconfirmed: that higher is better.
+- **Farflung** comes from one real post (`205/500 km`: Common, Common, Miss, Uncommon, Rare). It has no round emoji yet, so stand-ins are used (Common 🏠, Uncommon 🚗, Rare ✈️, Elusive 🚀, Farflung 🛸, Miss ⬛); swap them when the game adds its own.
 - **Cross-server sharing** has been used by one person; it still wants a wider check.
 
 ## Later

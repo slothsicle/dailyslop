@@ -5,7 +5,7 @@ score, the bot deletes it, posts a compact reformatted version, and shows a per-
 leaderboard. User-facing docs are in `README.md` and `docs/`; this file is for working on the code.
 
 ## Status
-Five games are supported (Krillion, Chainle, MapTap, Wordle, Connections) and the bot runs on a
+Six games are supported (Krillion, Chainle, MapTap, Farflung, Wordle, Connections) and the bot runs on a
 real server (two Discord servers so far). `bot.py` has no unit tests (the tests cover the pure
 modules), so changes to it are only proven by running the bot; what is still unverified against
 real posts or a live server is listed in `ROADMAP.md`.
@@ -143,4 +143,8 @@ asked), as v0.1.0 to v0.4.x were cut:
   game. Score = guesses made (4 = perfect, 7 at most for a win); a fail counts as 8. Fewest
   wins. Inconsistent grids (unfinished, a colour solved twice, play after 4 mistakes) are left
   alone. The `extra` is the solve order, with ❌ for each mistake.
+- **Farflung** (one real post): `Farflung #46 · 205/500 km` / five tier words joined by `·` / optional
+  `farflung.game` link. Points: Farflung 100, Elusive 85, Rare 70, Uncommon 55, Common 40, Miss 0.
+  The total must equal their sum (max 500). The words are shown as stand-in emoji
+  (🏠 🚗 ✈️ 🚀 🛸, ⬛ for a miss; an interim measure) in `extra`; `km` is dropped.
 - If a real post is rejected, fix the parser rather than assuming the post is wrong.
