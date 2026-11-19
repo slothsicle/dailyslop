@@ -6,7 +6,8 @@ leaderboard.
 
 ## Status
 Krillion parser, SQLite storage, and the bot skeleton are built. The Discord layer
-(`bot.py`) has not been run against a real server yet. Next games are in `ROADMAP.md`.
+(`bot.py`) is running on a real server; behaviour added since v0.2 (period buttons, replacing posts,
+the overwrite prompt) is only tested offline, see ROADMAP.md. Next games are in `ROADMAP.md`.
 
 ## Commands
 - Setup: `python -m venv .venv && source .venv/bin/activate && pip install -e '.[dev]'`
@@ -42,7 +43,8 @@ Krillion parser, SQLite storage, and the bot skeleton are built. The Discord lay
 - **Repeat pastes:** same puzzle already stored with a different total -> a public prompt (not
   ephemeral: Discord only allows that for interactions) with buttons only the poster can press.
   Replace swaps the stored score (for sharing users, in every server) and the post; Keep old or
-  60s of silence deletes the prompt and the paste. An identical repeat just gets a short notice.
+  60s of silence deletes the prompt and the paste. An identical repeat (same total and same `extra`) just gets a short notice.
+  The classification lives in `handler.MessageResult` (`new`/`same`/`changed`/`keep_original`).
 - The bot needs the Message Content *and* Server Members privileged intents.
 - `tests/`: parser tests use real pasted samples. Storage/handler tests use `:memory:` DBs.
 - Bot posts the compact message *before* deleting the original, so a failed post never loses a score.

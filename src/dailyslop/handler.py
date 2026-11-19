@@ -21,12 +21,42 @@ class Handled:
     score: Any  # the parser's result: .puzzle, .total, .detail, .display()
     is_new: bool  # False if this user already posted this puzzle
     previous_total: int | None = None  # the stored score that a repeat collided with
+    previous_extra: str = ""
+
+    @property
+    def identical_repeat(self) -> bool:
+        """A repeat of exactly what is already stored: nothing to overwrite."""
+        return (
+            not self.is_new
+            and self.previous_total == self.score.total
+            and self.previous_extra == getattr(self.score, "extra", "")
+        )
 
 
 @dataclass(frozen=True)
 class MessageResult:
     shares: list[Handled]  # every score found, in order
     annotation: str  # whatever else the person wrote (may be empty)
+
+    @property
+    def new(self) -> list[Handled]:
+        return [s for s in self.shares if s.is_new]
+
+    @property
+    def same(self) -> list[Handled]:
+        """Repeats identical to what is stored: they just get a notice."""
+        return [s for s in self.shares if s.identical_repeat]
+
+    @property
+    def changed(self) -> list[Handled]:
+        """Repeats that differ from what is stored: the person is asked whether to replace."""
+        return [s for s in self.shares if not s.is_new and not s.identical_repeat]
+
+    @property
+    def keep_original(self) -> bool:
+        """Keep the pasted message until the replace question is answered? Only when none of
+        it was reposted as a new score (it still holds their comment)."""
+        return bool(self.changed) and not self.new
 
 
 def _parse_window(lines: list[str]) -> tuple[Game, Any] | None:
@@ -102,13 +132,14 @@ def handle_message(
     handled = []
     for game, score in shares:
         is_new = db.add_score(**_fields(guild_id, user_id, user_name, game, score))
-        previous = None
+        old = None
         if not is_new:
             old = db.find_score(
                 guild_id=guild_id, user_id=user_id, game=game.key, puzzle=score.puzzle
             )
-            previous = old.total if old else None
-        handled.append(Handled(game, score, is_new, previous))
+        handled.append(
+            Handled(game, score, is_new, old.total if old else None, old.extra if old else "")
+        )
     return MessageResult(handled, annotation)
 
 

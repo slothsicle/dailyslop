@@ -368,9 +368,7 @@ class DailySlopBot(discord.Client):
 
         name = message.author.display_name
         quote = quote_annotation(result.annotation)
-        new = [s for s in result.shares if s.is_new]
-        same = [s for s in result.shares if not s.is_new and s.previous_total == s.score.total]
-        changed = [s for s in result.shares if not s.is_new and s not in same]
+        new, same, changed = result.new, result.same, result.changed
 
         # Post first, delete second: if posting fails the original is still there.
         for share in new:
@@ -389,9 +387,7 @@ class DailySlopBot(discord.Client):
                 f"({s.previous_total:,} → {s.score.total:,})"
                 for s in changed
             )
-            # If nothing else from the paste was posted, keep it (it still holds their comment)
-            # until they answer; the prompt deletes it afterwards.
-            keep = not new
+            keep = result.keep_original  # the prompt deletes the paste once it's answered
             prompt = ReplacePromptView(self, message, changed, keep_original=keep, quote=quote)
             prompt.prompt = await message.channel.send(
                 f"{message.author.mention}, you already posted {lines}. Replace the old score?",
