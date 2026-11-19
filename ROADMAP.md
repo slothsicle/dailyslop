@@ -3,7 +3,10 @@
 ## Done
 - **v0.1.0**: Krillion parser, SQLite storage, `/leaderboard` with paging, bot skeleton,
   opt-in cross-server sharing (prompt + `/sharing`), systemd deploy + daily backups.
-- **Next release**: MapTap and Chainle parsers (built, tested offline, not yet run live).
+- **v0.2** (deployed): MapTap and Chainle parsers; scores with comments/links around them.
+- **Next release**: weekly/monthly/all-time boards with period buttons, Krillion emoji on the daily
+  board, replacing the bot's previous post, overwrite-on-repeat prompt, `\` escape. Tested offline
+  only for everything in `bot.py`; verify live.
 
 ## Needs verification with real posts
 - **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)` in the sanity check, inferred from
@@ -21,7 +24,7 @@
 - **Wordle**: fewest guesses wins. Stable share format.
 
 ### Bot
-- Weekly boards and streaks.
+- Streaks.
 - Persistent leaderboard buttons (currently expire after 10 minutes / restart).
 - Revisit the opt-in prompt trigger if it feels wrong in practice (currently: first score
   posted by someone in 2+ servers running the bot).

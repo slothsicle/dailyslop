@@ -20,6 +20,7 @@ class Handled:
     game: Game
     score: Any  # the parser's result: .puzzle, .total, .detail, .display()
     is_new: bool  # False if this user already posted this puzzle
+    previous_total: int | None = None  # the stored score that a repeat collided with
 
 
 @dataclass(frozen=True)
@@ -100,16 +101,33 @@ def handle_message(
 
     handled = []
     for game, score in shares:
-        is_new = db.add_score(
-            guild_id=guild_id,
-            user_id=user_id,
-            user_name=user_name,
-            game=game.key,
-            puzzle=score.puzzle,
-            total=score.total,
-            display=score.display(),
-            detail=score.detail,
-            extra=getattr(score, "extra", ""),
-        )
-        handled.append(Handled(game, score, is_new))
+        is_new = db.add_score(**_fields(guild_id, user_id, user_name, game, score))
+        previous = None
+        if not is_new:
+            old = db.find_score(
+                guild_id=guild_id, user_id=user_id, game=game.key, puzzle=score.puzzle
+            )
+            previous = old.total if old else None
+        handled.append(Handled(game, score, is_new, previous))
     return MessageResult(handled, annotation)
+
+
+def _fields(guild_id: int, user_id: int, user_name: str, game: Game, score: Any) -> dict[str, Any]:
+    return {
+        "guild_id": guild_id,
+        "user_id": user_id,
+        "user_name": user_name,
+        "game": game.key,
+        "puzzle": score.puzzle,
+        "total": score.total,
+        "display": score.display(),
+        "detail": score.detail,
+        "extra": getattr(score, "extra", ""),
+    }
+
+
+def replace_score(
+    db: Database, *, guild_id: int, user_id: int, user_name: str, game: Game, score: Any
+) -> None:
+    """Overwrite a user's stored score for a puzzle (after they confirm a repeat)."""
+    db.replace_score(**_fields(guild_id, user_id, user_name, game, score))

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from collections.abc import Callable
@@ -12,7 +13,7 @@ from discord import app_commands
 from dailyslop.boards import SCOPES, build_board
 from dailyslop.db import Database
 from dailyslop.games import GAMES, Game
-from dailyslop.handler import handle_message
+from dailyslop.handler import Handled, handle_message, replace_score
 from dailyslop.leaderboard import Entry, page_count, quote_annotation, render_page
 
 log = logging.getLogger("dailyslop")
@@ -156,6 +157,86 @@ class SharePromptView(discord.ui.View):
                 pass
 
 
+REPLACE_TIMEOUT = 60  # seconds to answer "replace the old score?" before we give up
+
+
+class ReplacePromptView(discord.ui.View):
+    """Asked when someone pastes a score for a puzzle they already posted. Only they can answer.
+
+    Replace: store the new score(s) and post them. Keep old, or no answer in time: nothing
+    changes. Either way the pasted message goes away (if it was kept for this question) and
+    so does this prompt.
+    """
+
+    def __init__(
+        self,
+        bot: DailySlopBot,
+        message: discord.Message,
+        shares: list[Handled],
+        *,
+        keep_original: bool,
+        quote: str,
+    ) -> None:
+        super().__init__(timeout=REPLACE_TIMEOUT)
+        self.bot = bot
+        self.user_id = message.author.id
+        self.name = message.author.display_name
+        self.channel = message.channel
+        self.guild = message.guild
+        self.shares = shares
+        self.quote = quote
+        # The paste stays in the channel until answered only if nothing else of it was posted.
+        self.original: discord.Message | None = message if keep_original else None
+        self.prompt: discord.Message | None = None
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message(
+                "This question is for someone else.", ephemeral=True
+            )
+            return False
+        return True
+
+    async def _cleanup(self) -> None:
+        for msg in (self.prompt, self.original):
+            if msg is not None:
+                try:
+                    await msg.delete()
+                except discord.HTTPException:
+                    pass
+
+    @discord.ui.button(label="Replace it", style=discord.ButtonStyle.danger)
+    async def replace_button(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        self.stop()
+        await interaction.response.defer()
+        assert self.guild is not None
+        async with self.bot.channel_lock(self.channel.id):
+            quote = self.quote
+            for share in self.shares:
+                replace_score(
+                    self.bot.db,
+                    guild_id=self.guild.id,
+                    user_id=self.user_id,
+                    user_name=self.name,
+                    game=share.game,
+                    score=share.score,
+                )
+                await self.bot.post_share(
+                    self.channel, self.guild, self.name, share, quote
+                )
+                quote = ""  # the comment goes on the first one only
+        await self._cleanup()
+
+    @discord.ui.button(label="Keep the old one", style=discord.ButtonStyle.secondary)
+    async def keep_button(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        self.stop()
+        await interaction.response.defer()
+        await self._cleanup()
+
+    async def on_timeout(self) -> None:
+        await self._cleanup()  # no answer = keep the old score; the paste and prompt go
+
+
 class DailySlopBot(discord.Client):
     def __init__(self, db: Database) -> None:
         intents = discord.Intents.default()
@@ -164,6 +245,7 @@ class DailySlopBot(discord.Client):
         super().__init__(intents=intents)
         self.db = db
         self.tree = app_commands.CommandTree(self)
+        self._channel_locks: dict[int, asyncio.Lock] = {}
         self._register_commands()
 
     def mutual_server_count(self, user_id: int) -> int:
@@ -233,10 +315,47 @@ class DailySlopBot(discord.Client):
     async def on_ready(self) -> None:
         log.info("Logged in as %s", self.user)
 
+    def channel_lock(self, channel_id: int) -> asyncio.Lock:
+        """One at a time per channel, so two quick pastes can't each delete the other's post."""
+        return self._channel_locks.setdefault(channel_id, asyncio.Lock())
+
+    async def post_share(
+        self,
+        channel: discord.abc.Messageable,
+        guild: discord.Guild,
+        name: str,
+        share: Handled,
+        quote: str,
+    ) -> None:
+        """Post one compact score + board, then delete the bot's previous post for the same
+        game and puzzle in this channel. Caller must hold the channel lock."""
+        game = share.game
+        view = LeaderboardView(lambda scope: board_for(self.db, guild, game, scope))
+        content = f"**{name}** · {share.score.display()}"
+        if quote:
+            content += f"\n{quote}"
+        sent = await channel.send(
+            content,
+            embed=board_embed(view.title, view.entries, 0),
+            view=view,
+            allowed_mentions=discord.AllowedMentions.none(),  # a comment must never ping
+        )
+        view.message = sent
+        channel_id = sent.channel.id
+        old_id = self.db.swap_post(channel_id, game.key, share.score.puzzle, sent.id)
+        if old_id is not None:
+            try:
+                await sent.channel.get_partial_message(old_id).delete()
+            except discord.HTTPException:
+                pass  # already gone, or we can't delete it: nothing to do
+
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot or message.guild is None:
             return
+        async with self.channel_lock(message.channel.id):
+            await self._on_message(message)
 
+    async def _on_message(self, message: discord.Message) -> None:
         result = handle_message(
             self.db,
             guild_id=message.guild.id,
@@ -249,37 +368,41 @@ class DailySlopBot(discord.Client):
 
         name = message.author.display_name
         quote = quote_annotation(result.annotation)
-        no_pings = discord.AllowedMentions.none()  # a comment must never ping anyone
-        posted_any = False
-        repeats: list[str] = []
+        new = [s for s in result.shares if s.is_new]
+        same = [s for s in result.shares if not s.is_new and s.previous_total == s.score.total]
+        changed = [s for s in result.shares if not s.is_new and s not in same]
 
         # Post first, delete second: if posting fails the original is still there.
-        for share in result.shares:
-            if not share.is_new:
-                repeats.append(f"{share.game.title} {share.game.puzzle_label(share.score.puzzle)}")
-                continue
-            guild, game = message.guild, share.game
-            view = LeaderboardView(lambda scope, g=guild, gm=game: board_for(self.db, g, gm, scope))
-            title, entries = view.title, view.entries
-            content = f"**{name}** · {share.score.display()}"
-            if quote and not posted_any:  # their comment travels with the first new score
-                content += f"\n{quote}"
-            view.message = await message.channel.send(
-                content,
-                embed=board_embed(title, entries, 0),
-                view=view,
-                allowed_mentions=no_pings,
-            )
-            posted_any = True
+        for share in new:
+            await self.post_share(message.channel, message.guild, name, share, quote)
+            quote = ""  # their comment travels with the first new score only
 
-        if quote and not posted_any:  # every score was a repeat: still keep what they wrote
+        if same:
+            labels = ", ".join(f"{s.game.title} {s.game.puzzle_label(s.score.puzzle)}" for s in same)
             await message.channel.send(
-                f"**{name}**\n{quote}", allowed_mentions=no_pings
+                f"{message.author.mention}, you already posted {labels}.", delete_after=10
             )
-        if repeats:
+
+        if changed:
+            lines = ", ".join(
+                f"{s.game.title} {s.game.puzzle_label(s.score.puzzle)} "
+                f"({s.previous_total:,} → {s.score.total:,})"
+                for s in changed
+            )
+            # If nothing else from the paste was posted, keep it (it still holds their comment)
+            # until they answer; the prompt deletes it afterwards.
+            keep = not new
+            prompt = ReplacePromptView(self, message, changed, keep_original=keep, quote=quote)
+            prompt.prompt = await message.channel.send(
+                f"{message.author.mention}, you already posted {lines}. Replace the old score?",
+                view=prompt,
+            )
+            if keep:
+                await self._maybe_ask_to_share(message)
+                return  # the paste is deleted when the question is answered
+        elif not new and quote:  # only exact repeats: still keep what they wrote
             await message.channel.send(
-                f"{message.author.mention}, you already posted {', '.join(repeats)}.",
-                delete_after=10,
+                f"**{name}**\n{quote}", allowed_mentions=discord.AllowedMentions.none()
             )
 
         try:

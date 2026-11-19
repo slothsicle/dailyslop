@@ -21,13 +21,28 @@ Krillion parser, SQLite storage, and the bot skeleton are built. The Discord lay
   percentile); `Game.puzzle_label` controls how a puzzle id is displayed (MapTap shows dates).
 - `games.py`: registry of games and ranking direction. `handler.py`: Discord-free
   text -> stored score. `db.py`: SQLite (`scores`: one row per guild/user/game/puzzle,
-  where the guild is where it was pasted; `prefs`: each user's cross-server sharing choice).
+  where the guild is where it was pasted; `prefs`: each user's cross-server sharing choice;
+  `posts`: the bot's latest board message per channel/game/puzzle). `scores.extra` is text shown
+  only on a single day's board (Krillion's emoji row).
   `boards.py`: decides which scores appear on a server's board. `leaderboard.py`:
   rendering/paging. `bot.py`: Discord glue only; keep logic out of it.
 - **Visibility rule:** a score shows on server G's board if it was pasted in G, or if its
   author opted in to sharing AND is currently a member of G. Decided at read time, so
   changing a preference needs no migration. Sharing users get one score per puzzle globally;
   everyone else one per puzzle per server. Default is private.
+- **Boards** (`boards.SCOPES`): `daily` = the latest puzzle anyone has a score for (raw totals,
+  plus `extra`); `weekly` = the last 7 *puzzle days* up to that puzzle; `monthly` = the UTC
+  calendar month by when the score was posted; `all-time`. The last three are per-player
+  **averages** and never show `extra`. `/leaderboard` takes only the game; the period is a row of
+  buttons on the message (the auto-posted boards have them too).
+- **Replacing posts:** posting a score deletes the bot's previous post for the same
+  channel + game + puzzle (never another game or another day, never anyone's own messages). The
+  new post carries only its own author's comment, so replaced posts lose their comment; that is
+  accepted. A per-channel lock keeps two quick pastes from deleting each other's posts.
+- **Repeat pastes:** same puzzle already stored with a different total -> a public prompt (not
+  ephemeral: Discord only allows that for interactions) with buttons only the poster can press.
+  Replace swaps the stored score (for sharing users, in every server) and the post; Keep old or
+  60s of silence deletes the prompt and the paste. An identical repeat just gets a short notice.
 - The bot needs the Message Content *and* Server Members privileged intents.
 - `tests/`: parser tests use real pasted samples. Storage/handler tests use `:memory:` DBs.
 - Bot posts the compact message *before* deleting the original, so a failed post never loses a score.
@@ -40,6 +55,9 @@ Krillion parser, SQLite storage, and the bot skeleton are built. The Discord lay
   format; `handler.find_shares` locates share blocks inside longer messages (comments above or
   below, several scores at once) and the leftover text is reposted as a quote so nothing the
   person wrote is lost. Messages with >500 chars of other text or >30 lines are left alone.
+- **Escape:** a `\` at the start of the message, or at the start of any line of it, makes the
+  bot ignore the whole message (like escaping markdown). Needed because some parsers search for
+  their header rather than anchor to it.
 - Never print or log the Discord token.
 
 ## MapTap facts

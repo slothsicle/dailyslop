@@ -30,6 +30,16 @@ CREATE TABLE IF NOT EXISTS scores (
 CREATE INDEX IF NOT EXISTS idx_scores_lookup ON scores (guild_id, game, puzzle);
 CREATE INDEX IF NOT EXISTS idx_scores_user ON scores (user_id, game, puzzle);
 
+-- The bot's own leaderboard post for each (channel, game, puzzle), so the next one can
+-- replace it. Old rows are harmless; they are only looked up by that exact key.
+CREATE TABLE IF NOT EXISTS posts (
+    channel_id INTEGER NOT NULL,
+    game       TEXT    NOT NULL,
+    puzzle     INTEGER NOT NULL,
+    message_id INTEGER NOT NULL,
+    PRIMARY KEY (channel_id, game, puzzle)
+);
+
 CREATE TABLE IF NOT EXISTS prefs (
     user_id  INTEGER PRIMARY KEY,
     sharing  INTEGER,                      -- NULL = undecided, 0 = private, 1 = share
@@ -115,6 +125,35 @@ class Database:
 
     # --- scores --------------------------------------------------------------
 
+    def _shares_everywhere(self, user_id: int) -> bool:
+        return bool(self.get_sharing(user_id))
+
+    def find_score(self, *, guild_id: int, user_id: int, game: str, puzzle: int) -> Score | None:
+        """The score that blocks a new paste: this user's stored score for the puzzle.
+
+        Users who share across servers have one per puzzle everywhere (earliest wins);
+        everyone else one per server.
+        """
+        where = "user_id = ? AND game = ? AND puzzle = ?"
+        args: tuple = (user_id, game, puzzle)
+        if not self._shares_everywhere(user_id):
+            where += " AND guild_id = ?"
+            args += (guild_id,)
+        row = self.conn.execute(
+            "SELECT guild_id, user_id, user_name, puzzle, total, created_at, detail, extra "
+            f"FROM scores WHERE {where} ORDER BY created_at LIMIT 1",
+            args,
+        ).fetchone()
+        return Score(*row) if row else None
+
+    def _insert(self, *, guild_id, user_id, user_name, game, puzzle, total, display, detail, extra):
+        return self.conn.execute(
+            "INSERT OR IGNORE INTO scores "
+            "(guild_id, user_id, user_name, game, puzzle, total, display, created_at, detail, extra) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (guild_id, user_id, user_name, game, puzzle, total, display, time.time(), detail, extra),
+        )
+
     def add_score(
         self,
         *,
@@ -128,26 +167,65 @@ class Database:
         detail: str = "",
         extra: str = "",
     ) -> bool:
-        """Store a score. Returns False if it's a duplicate.
-
-        Users who share across servers get one score per puzzle everywhere; everyone
-        else gets one per puzzle per server.
-        """
-        if self.get_sharing(user_id):
-            exists = self.conn.execute(
-                "SELECT 1 FROM scores WHERE user_id = ? AND game = ? AND puzzle = ?",
-                (user_id, game, puzzle),
-            ).fetchone()
-            if exists:
-                return False
-        cur = self.conn.execute(
-            "INSERT OR IGNORE INTO scores "
-            "(guild_id, user_id, user_name, game, puzzle, total, display, created_at, detail, extra) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (guild_id, user_id, user_name, game, puzzle, total, display, time.time(), detail, extra),
+        """Store a score. Returns False if it's a duplicate (use replace_score to overwrite)."""
+        if self.find_score(guild_id=guild_id, user_id=user_id, game=game, puzzle=puzzle):
+            return False
+        cur = self._insert(
+            guild_id=guild_id, user_id=user_id, user_name=user_name, game=game, puzzle=puzzle,
+            total=total, display=display, detail=detail, extra=extra,
         )
         self.conn.commit()
         return cur.rowcount == 1
+
+    def replace_score(
+        self,
+        *,
+        guild_id: int,
+        user_id: int,
+        user_name: str,
+        game: str,
+        puzzle: int,
+        total: int,
+        display: str,
+        detail: str = "",
+        extra: str = "",
+    ) -> None:
+        """Overwrite this user's score for a puzzle, in one transaction.
+
+        A user who shares across servers has their old copy deleted from *every* server;
+        boards keep the earliest copy, so a leftover would keep showing the old score.
+        """
+        with self.conn:
+            if self._shares_everywhere(user_id):
+                self.conn.execute(
+                    "DELETE FROM scores WHERE user_id = ? AND game = ? AND puzzle = ?",
+                    (user_id, game, puzzle),
+                )
+            else:
+                self.conn.execute(
+                    "DELETE FROM scores WHERE guild_id = ? AND user_id = ? AND game = ? "
+                    "AND puzzle = ?",
+                    (guild_id, user_id, game, puzzle),
+                )
+            self._insert(
+                guild_id=guild_id, user_id=user_id, user_name=user_name, game=game,
+                puzzle=puzzle, total=total, display=display, detail=detail, extra=extra,
+            )
+
+    def swap_post(self, channel_id: int, game: str, puzzle: int, message_id: int) -> int | None:
+        """Record the bot's newest board post for this channel/game/puzzle.
+        Returns the previous one's message id (for the caller to delete), if any."""
+        with self.conn:
+            row = self.conn.execute(
+                "SELECT message_id FROM posts WHERE channel_id = ? AND game = ? AND puzzle = ?",
+                (channel_id, game, puzzle),
+            ).fetchone()
+            self.conn.execute(
+                "INSERT INTO posts (channel_id, game, puzzle, message_id) VALUES (?, ?, ?, ?) "
+                "ON CONFLICT(channel_id, game, puzzle) DO UPDATE SET message_id = excluded.message_id",
+                (channel_id, game, puzzle, message_id),
+            )
+        return row[0] if row else None
 
     def candidate_scores(self, guild_id: int, game: str) -> list[Score]:
         """Scores that *might* belong on this server's board: those pasted here, plus
