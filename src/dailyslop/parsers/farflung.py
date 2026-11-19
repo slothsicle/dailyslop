@@ -6,8 +6,7 @@ Format:
     https://farflung.game/s/7hv642?e=46
 
 Five rounds, each a rarity word worth fixed points: Farflung 100, Elusive 85, Rare 70,
-Uncommon 55, Common 40, Miss 0 (Miss is assumed to be 0; the real sample is consistent with
-it). The posted total must equal their sum, otherwise the post is unparseable. The share has
+Uncommon 55, Common 40, Miss 0. The posted total must equal their sum, otherwise the post is unparseable. The share has
 no emoji yet, so each word is shown as the Krillion tier emoji of the same rank. The link line
 is optional; any other text makes the post unparseable and the bot leaves it alone.
 """
@@ -61,7 +60,7 @@ class FarflungScore:
         return self.emojis  # shown on that day's board, not on aggregated ones
 
     def display(self) -> str:
-        return f"Farflung #{self.puzzle} · {self.total}/{MAX_SCORE} · {self.emojis}"
+        return f"Farflung #{self.puzzle} · {self.total} · {self.emojis}"
 
 
 def parse(text: str) -> FarflungScore | None:

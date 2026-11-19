@@ -12,7 +12,7 @@ SAMPLE = (
 def test_real_sample():
     score = parse(SAMPLE)
     assert score == FarflungScore(puzzle=46, total=205, emojis="🫧🫧⬛🐟🦑")
-    assert score.display() == "Farflung #46 · 205/500 · 🫧🫧⬛🐟🦑"
+    assert score.display() == "Farflung #46 · 205 · 🫧🫧⬛🐟🦑"
     assert score.extra == "🫧🫧⬛🐟🦑"
     assert score.detail == ""
 

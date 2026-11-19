@@ -144,7 +144,7 @@ asked), as v0.1.0 to v0.4.x were cut:
   wins. Inconsistent grids (unfinished, a colour solved twice, play after 4 mistakes) are left
   alone. The `extra` is the solve order, with ❌ for each mistake.
 - **Farflung** (one real post): `Farflung #46 · 205/500 km` / five tier words joined by `·` / optional
-  `farflung.game` link. Points: Farflung 100, Elusive 85, Rare 70, Uncommon 55, Common 40, Miss 0
-  (Miss assumed). The total must equal their sum (max 500). The words are shown as the Krillion
+  `farflung.game` link. Points: Farflung 100, Elusive 85, Rare 70, Uncommon 55, Common 40, Miss 0.
+  The total must equal their sum (max 500). The words are shown as the Krillion
   tier emoji of the same rank (an interim measure) in `extra`; `km` is dropped.
 - If a real post is rejected, fix the parser rather than assuming the post is wrong.
