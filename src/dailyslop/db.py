@@ -12,6 +12,7 @@ import sqlite3
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import ClassVar
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS scores (
@@ -75,16 +76,26 @@ class Database:
             self.conn.execute("ALTER TABLE scores ADD COLUMN detail TEXT NOT NULL DEFAULT ''")
         if "extra" not in columns:  # added with the daily Krillion emoji
             self.conn.execute("ALTER TABLE scores ADD COLUMN extra TEXT NOT NULL DEFAULT ''")
-            # Krillion's emoji were only ever stored inside `display`
-            # ("Krillion #126 · 375 · 🐟🦑..."), so recover them for the scores already there.
+        self._backfill_extra()
+        self.conn.commit()
+
+    # Games whose `extra` was only ever stored inside `display` ("Krillion #126 · 375 · 🐟🦑...",
+    # "MapTap · Nov 17 · 929 · 94 92 100 91 90"): game -> (segments in display, index of extra).
+    _EXTRA_IN_DISPLAY: ClassVar[dict[str, tuple[int, int]]] = {"krillion": (3, 2), "maptap": (4, 3)}
+
+    def _backfill_extra(self) -> None:
+        """Recover `extra` for scores stored before a game had one. Safe to run every start:
+        it only touches rows whose extra is still empty."""
+        for game, (segments, index) in self._EXTRA_IN_DISPLAY.items():
             rows = self.conn.execute(
-                "SELECT rowid, display FROM scores WHERE game = 'krillion'"
+                "SELECT rowid, display FROM scores WHERE game = ? AND extra = ''", (game,)
             ).fetchall()
             for rowid, display in rows:
                 parts = display.split(" · ")
-                if len(parts) == 3:
-                    self.conn.execute("UPDATE scores SET extra = ? WHERE rowid = ?", (parts[2], rowid))
-        self.conn.commit()
+                if len(parts) == segments:
+                    self.conn.execute(
+                        "UPDATE scores SET extra = ? WHERE rowid = ?", (parts[index], rowid)
+                    )
 
     def close(self) -> None:
         self.conn.close()

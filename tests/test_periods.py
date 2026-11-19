@@ -146,14 +146,50 @@ def test_old_databases_get_their_krillion_emoji_back(tmp_path):
         INSERT INTO scores VALUES (1, 10, 'ann', 'krillion', 126, 365,
           'Krillion #126 · 365 · 🦑🦑🐟🫧🦑🦑🏮', 1.0, '');
         INSERT INTO scores VALUES (1, 10, 'ann', 'chainle', 90, 2837,
-          'Chainle #90 · 2,837', 1.0, 'beat 71%');"""
+          'Chainle #90 · 2,837', 1.0, 'beat 71%');
+        INSERT INTO scores VALUES (1, 10, 'ann', 'maptap', 738000, 929,
+          'MapTap · Nov 17 · 929 · 94 92 100 91 90', 1.0, '');"""
     )
     conn.commit()
     conn.close()
     db = Database(path)
     assert board(db, "daily")[1] == [Entry("ann", "365", EMOJI)]
+    maptap = db.conn.execute("SELECT extra FROM scores WHERE game = 'maptap'").fetchone()[0]
+    chainle = db.conn.execute("SELECT extra FROM scores WHERE game = 'chainle'").fetchone()[0]
+    assert (maptap, chainle) == ("94 92 100 91 90", "")
     db.close()
     Database(path).close()  # migrating twice is harmless
+
+
+def test_a_database_that_already_has_the_column_still_gets_maptap_rounds_back(tmp_path):
+    """The server migrated before MapTap had an extra; the next start must fill it in."""
+    path = tmp_path / "mid.db"
+    first = Database(path)  # current schema, so the column already exists
+    first.conn.execute(
+        "INSERT INTO scores (guild_id, user_id, user_name, game, puzzle, total, display, "
+        "created_at, detail, extra) VALUES (1, 10, 'ann', 'maptap', 738000, 929, "
+        "'MapTap · Nov 17 · 929 · 94 92 100 91 90', 1.0, '', '')"
+    )
+    first.conn.commit()
+    first.close()
+    second = Database(path)
+    assert second.conn.execute("SELECT extra FROM scores").fetchone()[0] == "94 92 100 91 90"
+    second.close()
+
+
+def test_maptap_daily_board_shows_the_rounds():
+    from dailyslop.parsers.maptap import parse
+
+    db = Database()
+    from datetime import date
+
+    s = parse("www.maptap.gg November 17\n94🏅 92🏆 100🎯 91👑 90👑\nFinal score: 929",
+              today=date(2026, 11, 17))
+    db.add_score(guild_id=1, user_id=10, user_name="ann", game="maptap", puzzle=s.puzzle,
+                 total=s.total, display=s.display(), extra=s.extra)
+    title, entries = build_board(db, 1, GAMES["maptap"], "daily", {10})
+    assert title == "MapTap Nov 17" and entries == [Entry("ann", "929", "94 92 100 91 90")]
+    assert build_board(db, 1, GAMES["maptap"], "all-time", {10})[1][0].extra == ""
 
 
 # --- rendering ---------------------------------------------------------------------------------

@@ -50,6 +50,10 @@ class MapTapScore:
     def detail(self) -> str:
         return ""
 
+    @property
+    def extra(self) -> str:
+        return " ".join(str(r) for r in self.rounds)  # the five rounds, shown on the daily board
+
     def display(self) -> str:
         rounds = " ".join(str(r) for r in self.rounds)
         return f"MapTap · {puzzle_label(self.puzzle)} · {self.total:,} · {rounds}"

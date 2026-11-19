@@ -15,6 +15,7 @@ def test_real_sample():
     )
     assert score.display() == "MapTap · Nov 17 · 929 · 94 92 100 91 90"
     assert score.detail == ""
+    assert score.extra == "94 92 100 91 90"  # shown on the daily board
 
 
 def test_puzzle_label():
