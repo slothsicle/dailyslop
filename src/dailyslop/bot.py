@@ -287,6 +287,51 @@ class DailySlopBot(discord.Client):
             view.message = await interaction.original_response()
 
         @self.tree.command(
+            name="purge",
+            description="Delete the bot's old posts in this channel (keeps each game's latest board)",
+        )
+        @app_commands.guild_only()
+        @app_commands.default_permissions(manage_messages=True)
+        @app_commands.describe(limit="How many recent messages to look through (default 200)")
+        async def purge(
+            interaction: discord.Interaction, limit: app_commands.Range[int, 1, 1000] = 200
+        ) -> None:
+            channel = interaction.channel
+            # default_permissions can be loosened by a server admin, so check again here.
+            if not interaction.permissions.manage_messages:
+                await interaction.response.send_message(
+                    "You need the Manage Messages permission to do that.", ephemeral=True
+                )
+                return
+            if channel is None or not hasattr(channel, "purge"):
+                await interaction.response.send_message(
+                    "I can't purge this kind of channel.", ephemeral=True
+                )
+                return
+            await interaction.response.defer(ephemeral=True)
+            try:
+                async with self.channel_lock(channel.id):
+                    keep = self.db.latest_post_ids(channel.id)
+                    deleted = await channel.purge(  # type: ignore[union-attr]
+                        limit=limit,
+                        check=lambda m: m.author.id == self.user.id and m.id not in keep,
+                    )
+                    self.db.forget_old_posts(channel.id)
+            except discord.HTTPException as exc:
+                log.warning("Purge failed in #%s: %s", channel, exc)
+                await interaction.followup.send(
+                    "I couldn't delete messages here. I need Manage Messages and Read Message "
+                    "History in this channel.",
+                    ephemeral=True,
+                )
+                return
+            await interaction.followup.send(
+                f"Deleted {len(deleted)} old bot message{'s' if len(deleted) != 1 else ''} "
+                f"(looked through the last {limit}). Each game's latest board was kept.",
+                ephemeral=True,
+            )
+
+        @self.tree.command(
             name="sharing", description="Choose whether your scores show on your other servers"
         )
         @app_commands.choices(

@@ -128,3 +128,26 @@ def test_identical_plus_changed_asks_about_the_changed_one_only(db):
     assert [s.score.puzzle for s in r.same] == [126]
     assert [s.score.puzzle for s in r.changed] == [127]
     assert r.keep_original is True
+
+
+# --- /purge bookkeeping ---------------------------------------------------------------------
+
+
+def test_latest_post_ids_are_the_newest_puzzle_of_each_game_in_the_channel(db):
+    db.swap_post(500, "krillion", 125, 1)
+    db.swap_post(500, "krillion", 126, 2)  # newest Krillion
+    db.swap_post(500, "chainle", 90, 3)  # newest (only) Chainle
+    db.swap_post(500, "chainle", 89, 4)
+    db.swap_post(501, "krillion", 100, 5)  # another channel
+    assert db.latest_post_ids(500) == {2, 3}
+    assert db.latest_post_ids(501) == {5}
+    assert db.latest_post_ids(999) == set()
+
+
+def test_forget_old_posts_keeps_only_the_current_ones(db):
+    for msg, (game, puzzle) in enumerate([("krillion", 125), ("krillion", 126), ("chainle", 90)], 1):
+        db.swap_post(500, game, puzzle, msg)
+    db.swap_post(501, "krillion", 1, 9)
+    db.forget_old_posts(500)
+    ids = {r[0] for r in db.conn.execute("SELECT message_id FROM posts")}
+    assert ids == {2, 3, 9}  # the other channel is untouched

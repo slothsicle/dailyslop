@@ -42,6 +42,9 @@ the overwrite prompt) is only tested offline, see ROADMAP.md. Next games are in 
   channel + game + puzzle (never another game or another day, never anyone's own messages). The
   new post carries only its own author's comment, so replaced posts lose their comment; that is
   accepted. A per-channel lock keeps two quick pastes from deleting each other's posts.
+- **`/purge [limit]`** (needs Manage Messages, checked again at runtime): deletes the bot's own
+  messages among the last `limit` (default 200, max 1000) in that channel, except the newest-puzzle
+  post of each game (`db.latest_post_ids`). Only ever the bot's messages, never anyone else's.
 - **Repeat pastes:** same puzzle already stored with a different total -> a public prompt (not
   ephemeral: Discord only allows that for interactions) with buttons only the poster can press.
   Replace swaps the stored score (for sharing users, in every server) and the post; Keep old or

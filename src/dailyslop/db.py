@@ -238,6 +238,27 @@ class Database:
             )
         return row[0] if row else None
 
+    def latest_post_ids(self, channel_id: int) -> set[int]:
+        """The bot's current board posts in a channel: the newest puzzle of each game.
+        Everything else it posted there is history that /purge may delete."""
+        rows = self.conn.execute(
+            "SELECT message_id FROM posts p WHERE channel_id = ? AND puzzle = "
+            "(SELECT MAX(puzzle) FROM posts WHERE channel_id = p.channel_id AND game = p.game)",
+            (channel_id,),
+        ).fetchall()
+        return {row[0] for row in rows}
+
+    def forget_old_posts(self, channel_id: int) -> None:
+        """Drop the bookkeeping for posts that are no longer the current ones."""
+        keep = self.latest_post_ids(channel_id)
+        rows = self.conn.execute(
+            "SELECT message_id FROM posts WHERE channel_id = ?", (channel_id,)
+        ).fetchall()
+        with self.conn:
+            for (message_id,) in rows:
+                if message_id not in keep:
+                    self.conn.execute("DELETE FROM posts WHERE message_id = ?", (message_id,))
+
     def candidate_scores(self, guild_id: int, game: str) -> list[Score]:
         """Scores that *might* belong on this server's board: those pasted here, plus
         those from users who opted in to sharing. The caller still has to check that
