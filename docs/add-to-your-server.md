@@ -12,11 +12,11 @@ that game's leaderboard underneath. Anything it can't fully parse is left alone.
 ## What you need
 
 - The **Manage Server** permission on your Discord server (owners and admins have it).
-- The bot's **invite link** (ask whoever runs it, or see the note at the bottom if that's you).
+- The bot's **install link**: <https://discord.com/oauth2/authorize?client_id=1572409841748680875>
 
 ## Steps
 
-1. **Open the invite link** and pick your server from the dropdown. Only servers where you
+1. **Open the install link** and pick your server from the dropdown. Only servers where you
    have Manage Server are listed.
 2. **Review the permissions**, then click **Authorize**. The bot needs all of these:
 
@@ -67,13 +67,3 @@ your scores never show in another server unless you opt in with `/sharing`.
 Kick it from **Server Settings, then Members**, or remove it under **Server Settings, then
 Integrations**. Its stored scores for your server stay in the bot's database; ask whoever runs
 it to delete them if you want them gone.
-
----
-
-*If you run the bot yourself:* the invite link is
-`https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=93184`
-with `YOUR_CLIENT_ID` replaced by the **Application ID** from your app's *General Information*
-tab in the [Developer Portal](https://discord.com/developers/applications). Share that
-link with server admins. You also need **Message Content Intent** and **Server Members
-Intent** switched on under the *Bot* tab, or the bot can't read pastes or tell who is in
-which server.

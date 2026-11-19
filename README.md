@@ -13,8 +13,8 @@ pastes a score, dailyslop:
 If the bot can't fully understand a message, **it leaves it alone**. It never deletes anything
 it couldn't parse.
 
-> **Just want to add the bot to your server?** See
-> [docs/add-to-your-server.md](docs/add-to-your-server.md).
+> **Just want to add the bot to your server?** [Install link](https://discord.com/oauth2/authorize?client_id=1572409841748680875), or see
+> [docs/add-to-your-server.md](docs/add-to-your-server.md) for what to expect.
 
 ## Supported games
 
@@ -102,15 +102,16 @@ If they say no or ignore the question, they stay private. Either way they can sw
 3. On the same tab, turn on **Message Content Intent** and **Server Members Intent** (under
    *Privileged Gateway Intents*). Without the first the bot can't read pastes; without the
    second it can't tell who is a member of which server.
-4. Invite the bot with this URL, replacing `YOUR_CLIENT_ID` with the Application ID from the
-   **General Information** tab:
+4. Set up the install link. On the **Installation** tab:
+   - under *Installation Contexts*, tick **Guild Install**;
+   - under *Default Install Settings → Guild Install*, add the scopes `bot` and
+     `applications.commands` and these permissions: View Channels, Send Messages, Embed
+     Links, Read Message History and **Manage Messages** (to delete pastes and the bot's own
+     old posts);
+   - set *Install Link* to **Discord Provided Link**, and open it to add the bot to a server.
 
-   ```
-   https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=93184
-   ```
-
-   The permissions are View Channels, Send Messages, Embed Links, Read Message History and
-   **Manage Messages** (to delete pastes and the bot's own old posts).
+   Back on the **Bot** tab, turn on **Public Bot** if anyone other than you will add it.
+   Without it, only the app's owner can.
 
 ### 2. Run it
 
