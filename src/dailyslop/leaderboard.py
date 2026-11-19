@@ -5,7 +5,7 @@ from __future__ import annotations
 import unicodedata
 from dataclasses import dataclass
 
-PAGE_SIZE = 10
+PAGE_SIZE = 5
 NAME_WIDTH = 12  # columns; keeps a board line on one row even on a phone
 MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
 

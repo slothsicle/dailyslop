@@ -6,7 +6,7 @@ from dailyslop.boards import build_board
 from dailyslop.db import Database
 from dailyslop.games import GAMES
 from dailyslop.handler import handle_message
-from dailyslop.leaderboard import Entry, page_count, render_page
+from dailyslop.leaderboard import PAGE_SIZE, Entry, page_count, render_page
 
 K125_365 = "Krillion #125 🦐\n365\n\n🦑🦑🐟🫧🦑🦑🏮"
 K125_190 = "Krillion #125 🦐\n190\n\n🐟🐟🐟🐟🐟🫧🐟"
@@ -99,10 +99,12 @@ def test_render_page_empty():
 
 def test_render_page_paginates_and_clamps():
     entries = [Entry(f"u{i}", str(100 - i)) for i in range(1, 26)]
-    assert page_count(entries) == 3
+    pages = -(-25 // PAGE_SIZE)
+    assert PAGE_SIZE == 5 and page_count(entries) == pages == 5
     first = render_page(entries, 0)
-    assert first.splitlines()[0].startswith("🥇") and "u10" in first and "u11" not in first
-    last = render_page(entries, 2)
+    assert first.splitlines()[0].startswith("🥇")
+    assert f"u{PAGE_SIZE}" in first and f"u{PAGE_SIZE + 1}" not in first
+    last = render_page(entries, pages - 1)
     assert "`21.`" in last and "u25" in last
     assert render_page(entries, 99) == last
     assert render_page(entries, -5) == first
