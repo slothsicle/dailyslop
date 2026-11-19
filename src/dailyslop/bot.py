@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Callable
 
 import discord
 from discord import app_commands
 
-from dailyslop.boards import build_board
+from dailyslop.boards import SCOPES, build_board
 from dailyslop.db import Database
 from dailyslop.games import GAMES, Game
 from dailyslop.handler import handle_message
@@ -38,19 +39,44 @@ def board_embed(title: str, entries: list[Entry], page: int) -> discord.Embed:
     return embed
 
 
+SCOPE_LABELS = {"daily": "Daily", "weekly": "Weekly", "monthly": "Monthly", "all-time": "All-time"}
+
+
+class PeriodButton(discord.ui.Button["LeaderboardView"]):
+    def __init__(self, scope: str) -> None:
+        super().__init__(label=SCOPE_LABELS[scope], style=discord.ButtonStyle.secondary, row=0)
+        self.scope = scope
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        assert self.view is not None
+        await self.view.switch(interaction, self.scope)
+
+
 class LeaderboardView(discord.ui.View):
-    def __init__(self, title: str, entries: list[Entry]) -> None:
+    """A board with period buttons (daily/weekly/...) on top and page buttons below."""
+
+    def __init__(self, build: Callable[[str], tuple[str, list[Entry]]], scope: str = "daily") -> None:
         super().__init__(timeout=VIEW_TIMEOUT)
-        self.title = title
-        self.entries = entries
+        self.build = build  # scope -> (title, entries), rebuilt fresh on every switch
+        self.scope = scope
+        self.title, self.entries = build(scope)
         self.page = 0
         self.message: discord.Message | None = None
+        for s in SCOPES:
+            self.add_item(PeriodButton(s))
         self._sync_buttons()
 
     def _sync_buttons(self) -> None:
         last = page_count(self.entries) - 1
         self.prev_button.disabled = self.page <= 0
         self.next_button.disabled = self.page >= last
+        for child in self.children:
+            if isinstance(child, PeriodButton):
+                child.style = (
+                    discord.ButtonStyle.primary
+                    if child.scope == self.scope
+                    else discord.ButtonStyle.secondary
+                )
 
     async def _show(self, interaction: discord.Interaction) -> None:
         self._sync_buttons()
@@ -58,12 +84,18 @@ class LeaderboardView(discord.ui.View):
             embed=board_embed(self.title, self.entries, self.page), view=self
         )
 
-    @discord.ui.button(label="◀", style=discord.ButtonStyle.secondary)
+    async def switch(self, interaction: discord.Interaction, scope: str) -> None:
+        self.scope = scope
+        self.title, self.entries = self.build(scope)
+        self.page = 0
+        await self._show(interaction)
+
+    @discord.ui.button(label="◀", style=discord.ButtonStyle.secondary, row=1)
     async def prev_button(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
         self.page -= 1
         await self._show(interaction)
 
-    @discord.ui.button(label="▶", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="▶", style=discord.ButtonStyle.secondary, row=1)
     async def next_button(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
         self.page += 1
         await self._show(interaction)
@@ -140,30 +172,25 @@ class DailySlopBot(discord.Client):
 
     def _register_commands(self) -> None:
         game_choices = [app_commands.Choice(name=g.title, value=g.key) for g in GAMES.values()]
-        scope_choices = [
-            app_commands.Choice(name="Latest puzzle", value="today"),
-            app_commands.Choice(name="All-time", value="all-time"),
-        ]
 
-        @self.tree.command(name="leaderboard", description="Show a game's leaderboard")
+        @self.tree.command(
+            name="leaderboard", description="Show a game's leaderboard (switch period with the buttons)"
+        )
         @app_commands.guild_only()
-        @app_commands.choices(game=game_choices, scope=scope_choices)
+        @app_commands.choices(game=game_choices)
         async def leaderboard(
-            interaction: discord.Interaction,
-            game: app_commands.Choice[str],
-            scope: app_commands.Choice[str] | None = None,
+            interaction: discord.Interaction, game: app_commands.Choice[str]
         ) -> None:
-            title, entries = board_for(
-                self.db, interaction.guild, GAMES[game.value], scope.value if scope else "today"
-            )
-            if not entries:
+            guild, chosen = interaction.guild, GAMES[game.value]
+            assert guild is not None  # guild_only
+            view = LeaderboardView(lambda scope: board_for(self.db, guild, chosen, scope))
+            if not view.entries:
                 await interaction.response.send_message(
-                    f"No {GAMES[game.value].title} scores yet.", ephemeral=True
+                    f"No {chosen.title} scores yet.", ephemeral=True
                 )
                 return
-            view = LeaderboardView(title, entries)
             await interaction.response.send_message(
-                embed=board_embed(title, entries, 0), view=view
+                embed=board_embed(view.title, view.entries, 0), view=view
             )
             view.message = await interaction.original_response()
 
@@ -231,8 +258,9 @@ class DailySlopBot(discord.Client):
             if not share.is_new:
                 repeats.append(f"{share.game.title} {share.game.puzzle_label(share.score.puzzle)}")
                 continue
-            title, entries = board_for(self.db, message.guild, share.game, "today")
-            view = LeaderboardView(title, entries)
+            guild, game = message.guild, share.game
+            view = LeaderboardView(lambda scope, g=guild, gm=game: board_for(self.db, g, gm, scope))
+            title, entries = view.title, view.entries
             content = f"**{name}** · {share.score.display()}"
             if quote and not posted_any:  # their comment travels with the first new score
                 content += f"\n{quote}"

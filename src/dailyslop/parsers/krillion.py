@@ -42,6 +42,10 @@ class KrillionScore:
     def detail(self) -> str:
         return ""  # nothing extra to show next to the total on a leaderboard
 
+    @property
+    def extra(self) -> str:
+        return self.emojis  # shown on that day's board, not on aggregated ones
+
     def display(self) -> str:
         return f"Krillion #{self.puzzle} · {self.total} · {self.emojis}"
 

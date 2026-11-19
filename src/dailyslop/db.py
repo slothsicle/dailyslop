@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS scores (
     display    TEXT    NOT NULL,
     created_at REAL    NOT NULL,
     detail     TEXT    NOT NULL DEFAULT '',
+    extra      TEXT    NOT NULL DEFAULT '',
     PRIMARY KEY (guild_id, user_id, game, puzzle)
 );
 CREATE INDEX IF NOT EXISTS idx_scores_lookup ON scores (guild_id, game, puzzle);
@@ -46,6 +47,7 @@ class Score:
     total: int
     created_at: float
     detail: str = ""  # extra text shown next to the total, e.g. "beat 71%"
+    extra: str = ""  # shown only on a single day's board, e.g. Krillion's emoji row
 
 
 class Database:
@@ -61,7 +63,18 @@ class Database:
         columns = {row[1] for row in self.conn.execute("PRAGMA table_info(scores)")}
         if "detail" not in columns:  # added in v0.2
             self.conn.execute("ALTER TABLE scores ADD COLUMN detail TEXT NOT NULL DEFAULT ''")
-            self.conn.commit()
+        if "extra" not in columns:  # added with the daily Krillion emoji
+            self.conn.execute("ALTER TABLE scores ADD COLUMN extra TEXT NOT NULL DEFAULT ''")
+            # Krillion's emoji were only ever stored inside `display`
+            # ("Krillion #126 · 375 · 🐟🦑..."), so recover them for the scores already there.
+            rows = self.conn.execute(
+                "SELECT rowid, display FROM scores WHERE game = 'krillion'"
+            ).fetchall()
+            for rowid, display in rows:
+                parts = display.split(" · ")
+                if len(parts) == 3:
+                    self.conn.execute("UPDATE scores SET extra = ? WHERE rowid = ?", (parts[2], rowid))
+        self.conn.commit()
 
     def close(self) -> None:
         self.conn.close()
@@ -113,6 +126,7 @@ class Database:
         total: int,
         display: str,
         detail: str = "",
+        extra: str = "",
     ) -> bool:
         """Store a score. Returns False if it's a duplicate.
 
@@ -128,9 +142,9 @@ class Database:
                 return False
         cur = self.conn.execute(
             "INSERT OR IGNORE INTO scores "
-            "(guild_id, user_id, user_name, game, puzzle, total, display, created_at, detail) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (guild_id, user_id, user_name, game, puzzle, total, display, time.time(), detail),
+            "(guild_id, user_id, user_name, game, puzzle, total, display, created_at, detail, extra) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (guild_id, user_id, user_name, game, puzzle, total, display, time.time(), detail, extra),
         )
         self.conn.commit()
         return cur.rowcount == 1
@@ -140,7 +154,7 @@ class Database:
         those from users who opted in to sharing. The caller still has to check that
         shared users are actually members here (see boards.py)."""
         rows = self.conn.execute(
-            "SELECT guild_id, user_id, user_name, puzzle, total, created_at, detail FROM scores "
+            "SELECT guild_id, user_id, user_name, puzzle, total, created_at, detail, extra FROM scores "
             "WHERE game = ? AND (guild_id = ? OR user_id IN "
             "(SELECT user_id FROM prefs WHERE sharing = 1))",
             (game, guild_id),

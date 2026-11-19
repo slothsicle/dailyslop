@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pytest
 
 from dailyslop.boards import build_board
@@ -33,8 +35,12 @@ def post(db, user_id, name, text, guild_id=X):
     return result.shares[0] if result else None
 
 
-def board(db, guild_id, members, scope="today", names=None):
-    return build_board(db, guild_id, KRILLION, scope, members, names)
+def board(db, guild_id, members, scope="daily", names=None, keep_extra=False):
+    """(title, entries). The per-entry extra (Krillion's emoji) is dropped unless asked for."""
+    title, entries = build_board(db, guild_id, KRILLION, scope, members, names)
+    if not keep_extra:
+        entries = [replace(e, extra="") for e in entries]
+    return title, entries
 
 
 # --- handler / parsing ------------------------------------------------------
@@ -218,7 +224,7 @@ def test_chainle_is_detected_and_board_shows_total_and_percentile(db):
     result = post(db, ANN, "ann", CHAINLE_90)
     assert result.game.key == "chainle" and result.is_new
     post(db, BOB, "bob", CHAINLE_90_LOW)
-    title, entries = build_board(db, X, GAMES["chainle"], "today", {ANN, BOB})
+    title, entries = build_board(db, X, GAMES["chainle"], "daily", {ANN, BOB})
     assert title == "Chainle #90"
     assert entries == [Entry("ann", "2,837 · beat 71%"), Entry("bob", "1,200 · beat 20%")]
 
@@ -226,8 +232,8 @@ def test_chainle_is_detected_and_board_shows_total_and_percentile(db):
 def test_games_do_not_mix_on_a_board(db):
     post(db, ANN, "ann", CHAINLE_90)
     post(db, ANN, "ann", K125_365)  # same user, different game
-    assert build_board(db, X, KRILLION, "today", {ANN})[1] == [Entry("ann", "365")]
-    assert build_board(db, X, GAMES["chainle"], "today", {ANN})[1] == [
+    assert board(db, X, {ANN})[1] == [Entry("ann", "365")]
+    assert build_board(db, X, GAMES["chainle"], "daily", {ANN})[1] == [
         Entry("ann", "2,837 · beat 71%")
     ]
 
@@ -240,7 +246,7 @@ def test_maptap_board_title_uses_the_date_label(db):
         guild_id=X, user_id=ANN, user_name="ann", game="maptap",
         puzzle=ordinal, total=929, display="MapTap · Nov 17 · 929",
     )
-    title, entries = build_board(db, X, GAMES["maptap"], "today", {ANN})
+    title, entries = build_board(db, X, GAMES["maptap"], "daily", {ANN})
     assert title == "MapTap Nov 17" and entries == [Entry("ann", "929")]
 
 
@@ -269,7 +275,7 @@ def test_old_database_without_detail_column_is_migrated(tmp_path):
     old.close()
 
     migrated = Database(path)
-    assert build_board(migrated, 1, KRILLION, "today", {10}) == (
+    assert build_board(migrated, 1, KRILLION, "daily", {10}) == (
         "Krillion #125", [Entry("ann", "365")]
     )
     assert post(migrated, 11, "bob", CHAINLE_90, guild_id=1).is_new  # new column is writable

@@ -109,6 +109,7 @@ def handle_message(
             total=score.total,
             display=score.display(),
             detail=score.detail,
+            extra=getattr(score, "extra", ""),
         )
         handled.append(Handled(game, score, is_new))
     return MessageResult(handled, annotation)
