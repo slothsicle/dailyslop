@@ -8,7 +8,7 @@ import pytest
 from dailyslop.boards import SCOPES, build_board
 from dailyslop.db import Database
 from dailyslop.games import GAMES
-from dailyslop.leaderboard import Entry, fit_name, render_page, text_width
+from dailyslop.leaderboard import EXTRA_INDENT, Entry, render_page
 
 K = GAMES["krillion"]
 G = 1
@@ -195,52 +195,31 @@ def test_maptap_daily_board_shows_the_rounds():
 # --- rendering ---------------------------------------------------------------------------------
 
 
-def test_boards_with_extras_put_them_on_a_second_line_under_the_name():
+def test_extras_go_on_a_second_line_under_each_player_in_normal_text():
     entries = [Entry("Alice", "385", "🦑🏮🦑⬛🦑🦑🦑"), Entry("Bo", "1,200", "🐟🐟🐟🐟🐟🫧🐟")]
-    out = render_page(entries, 0).splitlines()
-    assert out[0] == out[-1] == "```"
-    assert out[1:5] == [
-        " 1. Alice    385",
-        "    🦑🏮🦑⬛🦑🦑🦑",
-        " 2. Bo     1,200",
-        "    🐟🐟🐟🐟🐟🫧🐟",
+    out = render_page(entries, 0)
+    assert "```" not in out  # no monospace block
+    assert out.splitlines() == [
+        "🥇 **Alice** · 385",
+        EXTRA_INDENT + "🦑🏮🦑⬛🦑🦑🦑",
+        "🥈 **Bo** · 1,200",
+        EXTRA_INDENT + "🐟🐟🐟🐟🐟🫧🐟",
     ]
-    assert out[1].index("385") + 3 == out[3].index("1,200") + 5  # totals end in the same column
 
 
 def test_an_entry_without_an_extra_gets_no_second_line():
-    out = render_page([Entry("Alice", "385", "🦑"), Entry("Bo", "300")], 0).splitlines()
-    assert out[1:4] == [" 1. Alice  385", "    🦑", " 2. Bo     300"]
+    lines = render_page([Entry("Alice", "385", "🦑"), Entry("Bo", "300")], 0).splitlines()
+    assert lines == ["🥇 **Alice** · 385", EXTRA_INDENT + "🦑", "🥈 **Bo** · 300"]
 
 
-def test_long_and_wide_names_are_cut_so_lines_stay_short():
-    assert fit_name("a" * 40) == "a" * 19 + "…"  # NAME_MAX = 20
-    assert fit_name("a" * 40, 12) == "a" * 11 + "…"
-    assert fit_name("Alice") == "Alice"
-    cjk = fit_name("日本語のとても長い名前です", 12)
-    assert text_width(cjk) <= 12 and cjk.endswith("…")
-    assert "`" not in fit_name("we`ird")
+def test_long_names_are_not_cut():
+    name = "Bartholomew Featherstonehaugh III"
+    assert f"**{name}**" in render_page([Entry(name, "375", "🐟")], 0)
 
 
 def test_boards_without_emoji_keep_the_medal_layout():
     out = render_page([Entry("Alice", "385"), Entry("Bo", "300")], 0)
     assert out == "🥇 **Alice** · 385\n🥈 **Bo** · 300"
-
-
-def test_names_get_more_room_when_the_total_column_is_narrow():
-    long_name = "Bartholomew Featherstonehaugh"
-    short = render_page([Entry(long_name, "375", "🐟")], 0).splitlines()[1]
-    wide = render_page([Entry(long_name, "2,837 · 71%", "🟥")], 0).splitlines()[1]
-    assert short.startswith(" 1. Bartholomew Feather")  # roomy: Krillion-sized totals
-    assert len(wide.split("…")[0]) < len(short.split("…")[0])  # Chainle's is tighter
-
-
-def test_a_first_line_never_exceeds_the_budget_unless_the_name_floor_forces_it():
-    from dailyslop.leaderboard import LINE_BUDGET, NAME_MIN
-
-    for value in ("375", "1,000", "2,837 · 71%"):
-        line = render_page([Entry("x" * 60, value, "🟥")], 0).splitlines()[1]
-        assert text_width(line) <= max(LINE_BUDGET, 4 + NAME_MIN + 2 + len(value))
 
 
 def test_old_chainle_details_lose_the_word_beat_and_stay_that_way(tmp_path):
