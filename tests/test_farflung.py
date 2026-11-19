@@ -11,9 +11,9 @@ SAMPLE = (
 
 def test_real_sample():
     score = parse(SAMPLE)
-    assert score == FarflungScore(puzzle=46, total=205, emojis="🫧🫧⬛🐟🦑")
-    assert score.display() == "Farflung #46 · 205 · 🫧🫧⬛🐟🦑"
-    assert score.extra == "🫧🫧⬛🐟🦑"
+    assert score == FarflungScore(puzzle=46, total=205, emojis="🏠🏠⬛🚗✈️")
+    assert score.display() == "Farflung #46 · 205 · 🏠🏠⬛🚗✈️"
+    assert score.extra == "🏠🏠⬛🚗✈️"
     assert score.detail == ""
 
 
@@ -24,7 +24,7 @@ def test_link_and_km_are_optional():
 
 def test_all_tiers():
     score = parse("Farflung #1 · 350/500 km\nFarflung · Elusive · Rare · Uncommon · Common")
-    assert score.emojis == "🌟🏮🦑🐟🫧"
+    assert score.emojis == "🛸🚀✈️🚗🏠"
     assert score.total == 350
 
 

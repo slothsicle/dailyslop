@@ -23,7 +23,7 @@ it couldn't parse.
 | Krillion | Total points, higher is better (max 700) | ✅ Verified against real posts |
 | Chainle | Total score, higher is better (max 5,000), with the percentile | ✅ Built from real posts; "higher is better" is assumed |
 | MapTap | Final score, higher is better (max 1,000) | ✅ Built from real posts; the round weights are inferred, but match every real post seen so far |
-| Farflung | Total points, higher is better (max 500) | ⚠️ Built from one real post. Tier names show as Krillion emoji for now |
+| Farflung | Total points, higher is better (max 500) | ⚠️ Built from one real post. Tier names show as emoji (🏠 🚗 ✈️ 🚀 🛸) for now |
 | Wordle | Fewest guesses (a fail counts as 7) | ⚠️ Built from the documented format, not yet checked against real posts |
 | Connections | Fewest guesses (a fail counts as 8) | ⚠️ Built from the documented format; one real post (a fail) has been accepted, wins not yet seen |
 

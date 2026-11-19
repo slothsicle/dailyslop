@@ -7,7 +7,7 @@ Format:
 
 Five rounds, each a rarity word worth fixed points: Farflung 100, Elusive 85, Rare 70,
 Uncommon 55, Common 40, Miss 0. The posted total must equal their sum, otherwise the post is unparseable. The share has
-no emoji yet, so each word is shown as the Krillion tier emoji of the same rank. The link line
+no emoji yet, so each word is shown as a distance-themed emoji of the same rank (🏠 to 🛸). The link line
 is optional; any other text makes the post unparseable and the bot leaves it alone.
 """
 
@@ -25,14 +25,14 @@ TIER_POINTS: dict[str, int] = {
     "farflung": 100,
 }
 
-# Krillion's tier emoji, matched by rank, until Farflung has its own.
+# Our own stand-ins, closer to home when common and farther out when rare, until the game has its own.
 TIER_EMOJI: dict[str, str] = {
     "miss": "⬛",
-    "common": "🫧",
-    "uncommon": "🐟",
-    "rare": "🦑",
-    "elusive": "🏮",
-    "farflung": "🌟",
+    "common": "🏠",
+    "uncommon": "🚗",
+    "rare": "✈️",
+    "elusive": "🚀",
+    "farflung": "🛸",
 }
 
 ROUNDS = 5
@@ -49,7 +49,7 @@ _URL = re.compile(r"^https?://(?:www\.)?farflung\.game/\S*$", re.IGNORECASE)
 class FarflungScore:
     puzzle: int
     total: int
-    emojis: str  # one Krillion-equivalent tier emoji per round
+    emojis: str  # one tier emoji per round
 
     @property
     def detail(self) -> str:
