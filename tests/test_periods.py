@@ -195,13 +195,22 @@ def test_maptap_daily_board_shows_the_rounds():
 # --- rendering ---------------------------------------------------------------------------------
 
 
-def test_boards_with_emoji_are_a_table_with_aligned_columns():
+def test_boards_with_extras_put_them_on_a_second_line_under_the_name():
     entries = [Entry("Alice", "385", "🦑🏮🦑⬛🦑🦑🦑"), Entry("Bo", "1,200", "🐟🐟🐟🐟🐟🫧🐟")]
     out = render_page(entries, 0).splitlines()
     assert out[0] == out[-1] == "```"
-    first, second = out[1], out[2]
-    assert first.index("385") + 3 == second.index("1,200") + 5  # totals end in the same column
-    assert first.index("🦑") == second.index("🐟")  # emoji start in the same column
+    assert out[1:5] == [
+        " 1. Alice    385",
+        "    🦑🏮🦑⬛🦑🦑🦑",
+        " 2. Bo     1,200",
+        "    🐟🐟🐟🐟🐟🫧🐟",
+    ]
+    assert out[1].index("385") + 3 == out[3].index("1,200") + 5  # totals end in the same column
+
+
+def test_an_entry_without_an_extra_gets_no_second_line():
+    out = render_page([Entry("Alice", "385", "🦑"), Entry("Bo", "300")], 0).splitlines()
+    assert out[1:4] == [" 1. Alice  385", "    🦑", " 2. Bo     300"]
 
 
 def test_long_and_wide_names_are_cut_so_lines_stay_short():

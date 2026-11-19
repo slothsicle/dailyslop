@@ -54,16 +54,20 @@ def _pad(text: str, width: int, *, right: bool = False) -> str:
 
 
 def _render_table(entries: list[Entry], start: int) -> str:
-    """Monospace table with the columns lined up and the extra (emoji) last."""
+    """Monospace table: rank, name and total lined up on one line, with the extra (emoji,
+    round scores...) on a second line underneath. Keeping them apart means a long row of
+    emoji can't wrap awkwardly on a narrow screen."""
     names = [fit_name(e.name) for e in entries]
     name_w = max(text_width(n) for n in names)
     value_w = max(text_width(e.value) for e in entries)
+    indent = " " * 4  # lines the extra up under the name
     lines = []
     for rank, (entry, name) in enumerate(zip(entries, names, strict=True), start=start + 1):
         lines.append(
-            f"{rank:>2}. {_pad(name, name_w)}  {_pad(entry.value, value_w, right=True)}"
-            f"  {entry.extra}".rstrip()
+            f"{rank:>2}. {_pad(name, name_w)}  {_pad(entry.value, value_w, right=True)}".rstrip()
         )
+        if entry.extra:
+            lines.append(indent + entry.extra)
     return "```\n" + "\n".join(lines) + "\n```"
 
 
