@@ -22,9 +22,9 @@ it couldn't parse.
 |---|---|---|
 | Krillion | Total points, higher is better (max 700) | ✅ Verified against real posts |
 | Chainle | Total score, higher is better (max 5,000), with the percentile | ✅ Built from real posts; "higher is better" is assumed |
-| MapTap | Final score, higher is better (max 1,000) | ✅ Built from real posts; round weights inferred from one sample |
+| MapTap | Final score, higher is better (max 1,000) | ✅ Built from real posts; the round weights are inferred, but match every real post seen so far |
 | Wordle | Fewest guesses (a fail counts as 7) | ⚠️ Built from the documented format, not yet checked against real posts |
-| Connections | Fewest guesses (a fail counts as 8) | ⚠️ Same |
+| Connections | Fewest guesses (a fail counts as 8) | ⚠️ Built from the documented format; one real post (a fail) has been accepted, wins not yet seen |
 
 `Krillion ∞` (infinity mode) is a different game and is ignored. See [ROADMAP.md](ROADMAP.md).
 
@@ -62,12 +62,17 @@ gets a short note that disappears after 10 seconds. Pasting a *different* score 
 you already posted asks you (a message only you can answer) whether to **replace** the old one,
 so a wrong paste can be fixed. No answer within 60 seconds keeps the old score.
 
+**Made-up puzzle numbers are ignored.** Every game is daily, so a score whose puzzle number is
+more than a couple of days ahead of the newest one the bot has seen is treated as fake and the
+message is left alone. (The first score ever posted for a game is always accepted.)
+
 ## Commands
 
 - `/leaderboard game:<game>`: show a leaderboard. Buttons switch the period:
   **Daily** (the latest puzzle, raw totals), **Weekly** (the last 7 puzzle days),
   **Monthly** (the current calendar month, UTC) and **All-time**. Weekly and longer rank by
-  average. The reply deletes itself after 5 minutes.
+  average. Daily shows 5 players per page and the others 10. The reply deletes itself after
+  5 minutes.
 - `/sharing [setting]`: choose whether your scores show on your other servers (see below).
   With no setting it shows the current one.
 - `/purge [limit] [all]`: anyone can run it. Deletes the bot's old posts in the current channel
@@ -171,7 +176,7 @@ daily backups).
 ## Development
 
 ```bash
-pip install -e '.[dev]'
+pip install -r requirements.txt -e '.[dev]'
 pytest          # run tests
 ruff check .    # lint
 ```
@@ -180,7 +185,7 @@ Layout:
 
 - `src/dailyslop/parsers/`: one pure parser per game (text in, score or `None` out).
 - `games.py`: registry of games and how each is ranked.
-- `handler.py`: Discord-free logic that finds scores in a message and stores them.
+- `handler.py`: Discord-free logic that finds scores in a message, checks them and stores them.
 - `db.py`: SQLite storage. `boards.py`: which scores appear on which board.
   `leaderboard.py`: rendering and paging.
 - `bot.py`: the Discord glue. Keep logic out of it.
@@ -195,5 +200,5 @@ entry to `games.py`. See [CLAUDE.md](CLAUDE.md) for conventions and the release 
   dead), so paste again if that happens.
 - Scores stored before a game's daily-board extras existed (for example Chainle squares) show
   without them.
-- Cross-server sharing and everything added since v0.2 has so far been tested offline and in one
-  server.
+- The bot has run live in two servers, and cross-server sharing has so far been used by one
+  person. Larger cases are covered by offline tests only.

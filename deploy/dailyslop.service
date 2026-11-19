@@ -16,6 +16,8 @@ Environment=PYTHONDONTWRITEBYTECODE=1
 
 # Hardening: the bot only needs to read its code and write its data directory.
 NoNewPrivileges=true
+# Files the bot creates (database, WAL) are readable by dailyslop only.
+UMask=0077
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true

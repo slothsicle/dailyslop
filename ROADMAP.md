@@ -23,25 +23,29 @@
 - **v0.3.6**: weekly, monthly and all-time boards show 10 players per page (daily stays at 5).
 - **v0.3.7**: puzzle numbers from the future are ignored (a forged `#99999` can no longer become
   the daily board); runtime dependencies pinned in `requirements.txt`, Dependabot enabled.
+- **v0.4.0**: hardening and docs round. The database and backups are private to the bot's user
+  (`UMask=0077`; the deploy docs now go through `sudo` for backups), and the deploy, security and
+  verification docs are brought up to date.
 
 ## Needs verification
-Everything in `bot.py` is tested offline only, so the first live use of each is a test:
-the replace-or-keep prompt, period buttons, `/purge`, and the post-replacing behaviour
-(including two pastes arriving at once).
+`bot.py` has no unit tests, so the first live use of each feature is the test. Seen working live:
+the period buttons, post-replacing, `/purge`, and cross-server sharing for one person across two
+servers. Not yet confirmed live: the replace-or-keep prompt and two pastes arriving at once.
 
 With real posts:
-- **Wordle and Connections** are built from the documented share format only. Collect real
-  posts (hard mode, a fail, the colour-blind palette, a Connections fail) and check each is
-  accepted. Also check how they read on a board (Wordle `3`, fail `7 · failed`; Connections
+- **Wordle and Connections** are built from the documented share format. Connections has now
+  accepted one real post (a fail); Wordle none. Collect real posts (hard mode, a fail, the
+  colour-blind palette, a Connections win) and check each is accepted. Also check how they read on a board (Wordle `3`, fail `7 · failed`; Connections
   `4 · perfect`).
-- **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)`, inferred from one sample
-  (94 92 100 91 90 -> 929). If a real post is rejected, correct the weights in
+- **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)`, inferred from samples; all three
+  real ones so far agree (929, 924, 760). If a real post is rejected, correct the weights in
   `parsers/maptap.py`.
 - **Chainle.** The 5,000 maximum is stated on chainle.org but the site shows no share text, so
   the parser comes from four real posts. Still unconfirmed: that higher is better.
-- **Cross-server sharing** needs a live check in two servers that share a member.
+- **Cross-server sharing** has been used by one person; it still wants a wider check.
 
 ## Later
+- Add a firewall (and optionally fail2ban) on the server; passwords are already off.
 - Streaks.
 - Persistent leaderboard buttons (they currently expire after 10 minutes or a restart), and a
   replace-or-keep question that survives a restart.

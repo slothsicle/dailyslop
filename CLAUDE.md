@@ -6,8 +6,9 @@ leaderboard. User-facing docs are in `README.md` and `docs/`; this file is for w
 
 ## Status
 Five games are supported (Krillion, Chainle, MapTap, Wordle, Connections) and the bot runs on a
-real server. Everything in `bot.py` is tested offline only (the tests cover the pure modules);
-what is still unverified against real posts or a live server is listed in `ROADMAP.md`.
+real server (two Discord servers so far). `bot.py` has no unit tests (the tests cover the pure
+modules), so changes to it are only proven by running the bot; what is still unverified against
+real posts or a live server is listed in `ROADMAP.md`.
 
 ## Commands
 - Setup: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt -e '.[dev]'`
@@ -26,8 +27,8 @@ what is still unverified against real posts or a live server is listed in `ROADM
 - `games.py`: registry of games and ranking direction. `handler.py`: Discord-free
   text -> stored scores, and classifying them (`MessageResult.new/same/changed/keep_original`).
   `boards.py`: decides which scores appear on a server's board and builds each period.
-  `leaderboard.py`: rendering and paging (5 per page on the daily board, 10 on the weekly/monthly/all-time averages). `bot.py`: Discord glue only; keep logic
-  out of it.
+  `leaderboard.py`: rendering and paging (5 per page on the daily board, 10 on the
+  weekly/monthly/all-time averages). `bot.py`: Discord glue only; keep logic out of it.
 - `db.py`: SQLite. `scores`: one row per guild/user/game/puzzle (the guild is where it was
   pasted). `prefs`: each user's cross-server sharing choice. `posts`: the bot's latest board
   message per channel/game/puzzle. Migrations run on every start and are idempotent; older rows
@@ -38,9 +39,9 @@ what is still unverified against real posts or a live server is listed in `ROADM
 ## Behaviour to preserve
 - **Visibility:** a score shows on server G's board if it was pasted in G, or if its author opted
   in to sharing AND is currently a member of G. Decided at read time, so changing a preference
-  needs no migration. Sharing users get one score per puzzle globally (if copies from several servers exist, e.g.
-  pasted while private, the latest paste wins); everyone else one per
-  puzzle per server. Default is private.
+  needs no migration. Sharing users get one score per puzzle globally (if copies from several
+  servers exist, e.g. pasted while private, the latest paste wins); everyone else one per puzzle
+  per server. Default is private.
 - **Boards** (`boards.SCOPES`): `daily` = the latest puzzle anyone has a score for (raw totals,
   `extra` on a second line under each player, normal text, not monospace); `weekly` = the last 7
   *puzzle days* up to that puzzle; `monthly` = the UTC calendar month by when the score was
@@ -75,6 +76,8 @@ what is still unverified against real posts or a live server is listed in `ROADM
   whole message. Some parsers search for their header rather than anchor to it, so this is checked
   on leftover lines too.
 - Never print or log the Discord token.
+- Runtime dependencies are pinned in `requirements.txt` (what production runs); bump them
+  deliberately. On the server the data directory and backups are `700`/`600` (`UMask=0077`).
 - **Puzzle numbers are sanity-checked** (`handler.puzzle_is_plausible`): a score whose puzzle is
   more than ~2 days ahead of what the newest stored puzzle plus elapsed time allows is treated as
   forged: the whole message is left alone and nothing is stored. The first score for a game is
@@ -84,7 +87,7 @@ what is still unverified against real posts or a live server is listed in `ROADM
 
 ## Releases
 Whenever work is merged into `main` and pushed, version it in the same step (don't wait to be
-asked), as v0.1.0 to v0.3.x were cut:
+asked), as v0.1.0 to v0.4.x were cut:
 1. Pick the bump: **minor** (0.3.0 -> 0.4.0) for a new game, command or user-visible feature;
    **patch** (0.3.0 -> 0.3.1) for fixes, parser corrections, docs or cleanups. A schema migration
    alone is not a reason for a minor bump. If unsure, pick patch and say so.
@@ -92,15 +95,19 @@ asked), as v0.1.0 to v0.3.x were cut:
 3. Run `pytest` and `ruff check .`. Commit as `Release vX.Y.Z`, then `git tag vX.Y.Z` and
    `git push origin main vX.Y.Z`. Only tag `main`.
    For **minor** bumps only, also publish a GitHub release (tags alone don't show as Releases):
-   `gh release create vX.Y.Z --verify-tag --title vX.Y.Z --notes "<the ROADMAP line>"`.
-   Patches get a tag but no GitHub release.
+   `gh release create vX.Y.Z --verify-tag --title vX.Y.Z --notes-file <file>`, with notes laid out
+   as in the existing releases: a one-line summary, **Features**, **Upgrading** (migrations,
+   deploy steps) and **Known limitations**. Patches get a tag but no GitHub release.
 4. If the release adds a migration, say so in the deploy instructions and have the user take a
    backup first (`sudo systemctl start dailyslop-backup`). Pushing is the user's call: ask first
    unless they already said to push.
-5. Deploying: `ssh slothbots` works non-interactively from this machine (user `admin`). After the
-   push, ask before deploying unless the user already said to. Then run the update from
-   `docs/deploy.md` (`sudo -u dailyslop git pull`, `sudo systemctl restart dailyslop`, with the
-   backup first if there is a migration) and confirm with `systemctl is-active dailyslop`.
+5. Deploying: `ssh slothbots` works non-interactively from this machine (user `admin`), but only
+   while the user's ssh-agent holds the unlocked key (`ssh-add -t 8h ~/.ssh/id_ed25519`); on
+   `Permission denied (publickey)`, ask them to run that. After the push, ask before deploying
+   unless the user already said to. Then run the "Updating the bot" steps from `docs/deploy.md`
+   (`git pull`, `pip install -r requirements.txt -e .`, copy the unit files if they changed,
+   restart, with the backup first if there is a migration) and confirm with
+   `systemctl is-active dailyslop` plus a `Logged in as` line in the journal (it takes ~8s).
 
 ## Game facts
 - **Krillion** (verified against real posts): `Krillion #<n> 🦐`, the total, then 7 emoji, each a
@@ -109,9 +116,9 @@ asked), as v0.1.0 to v0.3.x were cut:
 - **MapTap:** `www.maptap.gg <Month> <day>` / five `<score><emoji>` tokens / `Final score: N`.
   No puzzle number or year, so the puzzle id is the date's ordinal, with the year inferred from
   today (this year unless that would be more than a day in the future). Final score is out of
-  1000. Rounds are weighted `(1, 1, 2, 3, 3)`; this reproduces the one real sample exactly
-  (94 92 100 91 90 -> 929) but is **inferred from that sample plus loose sources**, so the parser
-  only enforces it within `TOLERANCE` (5). If more real posts disagree, fix the weights or loosen
+  1000. Rounds are weighted `(1, 1, 2, 3, 3)`; this reproduces all three real samples seen so far
+  exactly (94 92 100 91 90 -> 929, 100 69 88 100 93 -> 924, 100 100 85 99 31 -> 760) but is
+  **inferred from them plus loose sources**, so the parser only enforces it within `TOLERANCE` (5). If more real posts disagree, fix the weights or loosen
   the check; don't assume the formula is right.
 - **Chainle:** `Chainle #N · 2,837 🔗` / `Beat 71% of players` / a line of 5 squares (🟥🟧🟨🟩) /
   an optional link (real posts said `chainle.io`, the site is chainle.org; both accepted). Any
@@ -124,7 +131,8 @@ asked), as v0.1.0 to v0.3.x were cut:
   (optional `*` = hard mode; `X/6` = fail), then one 5-square row per guess. The grid must agree
   with the header (row count; last row green iff solved). Fewest guesses wins; a fail counts as
   7. The `extra` is greens per guess.
-- **Connections** (documented format only, NOT yet verified): `Connections` / `Puzzle #512` / rows
+- **Connections** (documented format; one real post, a fail, has been accepted, wins not yet
+  seen): `Connections` / `Puzzle #512` / rows
   of 4 of 🟨🟩🟦🟪. A one-colour row is a solved group, a mixed row a mistake; 4 mistakes end the
   game. Score = guesses made (4 = perfect, 7 at most for a win); a fail counts as 8. Fewest
   wins. Inconsistent grids (unfinished, a colour solved twice, play after 4 mistakes) are left

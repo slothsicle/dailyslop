@@ -19,7 +19,12 @@ VPS works the same after step 1. Prices change, so check the current plan list.
   cat ~/.ssh/id_ed25519.pub     # this public half is what you give the provider
   ```
 
-  Set a passphrase when asked.
+  Set a passphrase when asked. The key is the only way into the server, so a copy of the file
+  without a passphrase is a copy of root access. (Add one to an existing key with
+  `ssh-keygen -p -f ~/.ssh/id_ed25519`.) Then load it into an agent once per login so you
+  aren't asked every time: on a systemd desktop, `systemctl --user enable --now ssh-agent.socket`,
+  point `SSH_AUTH_SOCK` at `$XDG_RUNTIME_DIR/ssh-agent.socket`, and run
+  `ssh-add -t 8h ~/.ssh/id_ed25519`.
 
 ## 1. Create the server
 
@@ -103,9 +108,10 @@ Host slothbots
     User admin
     IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly yes
+    IdentityAgent ${XDG_RUNTIME_DIR}/ssh-agent.socket
 ```
 
-so that `ssh slothbots` works.
+so that `ssh slothbots` works. (Leave out the `IdentityAgent` line if you don't use an agent.)
 
 ## 3. Create the bot's user and get the code
 
@@ -136,7 +142,7 @@ sudo -u dailyslop git clone git@github.com:slothsicle/dailyslop.git /opt/dailysl
 cd /opt/dailyslop
 sudo -u dailyslop python3 -m venv .venv
 sudo -u dailyslop .venv/bin/pip install -r requirements.txt -e .
-sudo -u dailyslop mkdir -p data backups
+sudo -u dailyslop mkdir -p -m 700 data backups
 
 # Create the config. Paste your PRODUCTION token after DISCORD_TOKEN=
 sudo -u dailyslop cp .env.example .env
@@ -169,7 +175,7 @@ The bot should now show as online in your server.
 | Restart | `sudo systemctl restart dailyslop` |
 | Stop | `sudo systemctl stop dailyslop` |
 | Run a backup now | `sudo systemctl start dailyslop-backup` |
-| List backups | `ls -l /opt/dailyslop/backups` |
+| List backups | `sudo ls -l /opt/dailyslop/backups` |
 | Check backups are healthy | `sudo bash /opt/dailyslop/deploy/check-backup.sh` |
 
 ### Updating the bot
@@ -180,12 +186,20 @@ sudo systemctl start dailyslop-backup      # first, if the release notes mention
 sudo -u dailyslop git pull
 sudo -u dailyslop .venv/bin/pip install -r requirements.txt -e .
 sudo systemctl restart dailyslop
-sleep 5; sudo journalctl -u dailyslop --since "1 min ago" --no-pager
+sleep 8; sudo journalctl -u dailyslop --since "1 min ago" --no-pager
 ```
 
 The last line should show `Logged in as ...` and no traceback. Database migrations run
 automatically on start and only add to the data, but take the backup anyway when a release
 changes the schema. New slash commands can take a while to appear in Discord.
+
+If a release changes anything in `deploy/*.service` or the timer, copy them over again and
+reload before restarting:
+
+```bash
+sudo cp deploy/dailyslop.service deploy/dailyslop-backup.service deploy/dailyslop-backup.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+```
 
 ### Backups
 
@@ -193,10 +207,11 @@ A timer runs `deploy/backup.py` daily and keeps the last 14 copies in
 `/opt/dailyslop/backups/`. It uses SQLite's backup API, so it's safe while the bot runs.
 
 Those copies sit on the same disk as the database, so they don't protect you if the server
-is lost. Occasionally copy one to your own machine, from your computer:
+is lost. Occasionally copy one to your own machine. The files belong to the `dailyslop` user and are
+readable by it alone, so go through `sudo`, from your computer:
 
 ```bash
-scp slothbots:/opt/dailyslop/backups/<file>.db .
+ssh slothbots 'sudo cat /opt/dailyslop/backups/<file>.db' > <file>.db
 ```
 
 ### Restoring
@@ -211,10 +226,17 @@ sudo systemctl start dailyslop
 
 - The production token lives only in `/opt/dailyslop/.env` (mode 600). If it ever leaks,
   click **Reset Token** in the Developer Portal and update the file.
+- The database and backups are private to the `dailyslop` user too (directories 700, files 600;
+  the units set `UMask=0077`).
 - Root login and password login over SSH are both off (step 2). Keep your private key's
   passphrase on, since the key is the only way in.
 - The deploy key is read-only. If the server is compromised, delete it under the repo's
   Deploy keys.
+- Runtime dependencies are pinned in `requirements.txt`, and Dependabot proposes updates.
+  Install from it (as above) rather than letting pip pick versions.
+- Optional: a cloud firewall that allows inbound port 22 only (ideally from your own IP) cuts
+  the constant stream of SSH login attempts. They can't succeed with passwords off, but they
+  fill the logs. Nothing else listens, and the bot only makes outbound connections.
 - Keep the OS patched: `sudo apt update && sudo apt upgrade -y` every so often, or enable
   `unattended-upgrades`.
 - If you ever lock yourself out, the Hetzner console can attach a rescue system or reset

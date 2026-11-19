@@ -5,4 +5,5 @@ Description=Back up the dailyslop database
 Type=oneshot
 User=dailyslop
 Group=dailyslop
+UMask=0077
 ExecStart=/opt/dailyslop/.venv/bin/python /opt/dailyslop/deploy/backup.py /opt/dailyslop/data/dailyslop.db /opt/dailyslop/backups --keep 14
