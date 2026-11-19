@@ -107,10 +107,11 @@ Host slothbots
 
 so that `ssh slothbots` works.
 
-## 3. Create the bot's user and get the code (the repo is private)
+## 3. Create the bot's user and get the code
 
 Run these as `admin`. The bot runs as its own login-less user, and the server pulls the code
-with a read-only deploy key, so it can never push.
+with a read-only deploy key, so it can never push. (The deploy key is only needed for a private
+repo. For a public one, skip the key steps and clone over `https://`.)
 
 ```bash
 sudo useradd --system --create-home --shell /usr/sbin/nologin dailyslop
@@ -174,10 +175,16 @@ The bot should now show as online in your server.
 
 ```bash
 cd /opt/dailyslop
+sudo systemctl start dailyslop-backup      # first, if the release notes mention a migration
 sudo -u dailyslop git pull
 sudo -u dailyslop .venv/bin/pip install -e .
 sudo systemctl restart dailyslop
+sleep 5; sudo journalctl -u dailyslop --since "1 min ago" --no-pager
 ```
+
+The last line should show `Logged in as ...` and no traceback. Database migrations run
+automatically on start and only add to the data, but take the backup anyway when a release
+changes the schema. New slash commands can take a while to appear in Discord.
 
 ### Backups
 

@@ -1,49 +1,43 @@
-# Roadmap / future versions
+# Roadmap
 
 ## Done
 - **v0.1.0**: Krillion parser, SQLite storage, `/leaderboard` with paging, bot skeleton,
   opt-in cross-server sharing (prompt + `/sharing`), systemd deploy + daily backups.
 - **v0.2.0**: MapTap, Chainle, Wordle and Connections parsers; scores with comments or links
   around them (several per message); daily/weekly/monthly/all-time boards with period buttons;
-  Krillion emoji and MapTap rounds on the daily board; the bot replaces its previous post for a
-  puzzle; overwrite-on-repeat prompt; `\` escape; `/leaderboard` replies delete after 5 minutes.
-  Everything in `bot.py` is tested offline only; verify live.
-- **v0.2.1**: Chainle squares and a Connections solve-order row on the daily board (Wordle's grid
-  is too wide for one line, so it has none). Chainle/Connections scores stored before this have
-  no row. Also MapTap rounds on the daily board; auto-posts have no period buttons; release
-  convention in CLAUDE.md.
-- **v0.2.2**: Wordle shows its greens per guess on the daily board (earlier scores have none).
-- **v0.3.0**: `/purge` (deletes the bot's old posts in a channel, keeps each game's latest board);
-  daily boards put the emoji/round scores on a second line under each player; 5 players per page.
-- **v0.3.1**: names get up to 20 columns on boards (adaptive width); Chainle shows `71%`, not
-  `beat 71%` (stored rows are migrated on start).
-- **v0.3.2**: boards are normal text again (no monospace table); extras stay on a second line;
-  names are never truncated.
+  the bot replaces its previous post for a puzzle; overwrite-on-repeat prompt; `\` escape;
+  `/leaderboard` replies delete after 5 minutes.
+- **v0.2.1 / v0.2.2**: per-game extras on the daily board (Krillion emoji, MapTap rounds,
+  Chainle squares, Connections solve order, Wordle greens per guess); auto-posts have no period
+  buttons. Scores stored before a game's extra existed show without it.
+- **v0.3.0**: `/purge` (deletes the bot's old posts in a channel, keeps each game's latest
+  board); extras on a second line under each player; 5 players per page.
+- **v0.3.1 / v0.3.2**: Chainle shows `71%` instead of `beat 71%` (stored rows migrated on
+  start); boards are normal text again, with names never truncated.
 
-## Needs verification with real posts
-- **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)` in the sanity check, inferred from
-  one sample (94 92 100 91 90 -> 929). Collect more real posts; if any are rejected or the fit
-  is off, correct the weights in `parsers/maptap.py`.
-- **Chainle.** The 5,000 maximum is stated on chainle.org, but the site shows no share text,
-  so the parser is built from one real post. The sample post's link said `chainle.io`; confirm which domain
-  real posts carry (both are accepted). Parser is tested against four real posts (with the 🔗
-  header and colored squares). Still unconfirmed: that higher is better.
-- **Cross-server sharing** is tested offline only. Check live in two real servers that share
-  a member.
+## Needs verification
+Everything in `bot.py` is tested offline only, so the first live use of each is a test:
+the replace-or-keep prompt, period buttons, `/purge`, and the post-replacing behaviour
+(including two pastes arriving at once).
 
+With real posts:
 - **Wordle and Connections** are built from the documented share format only. Collect real
-  posts (hard mode, fails, the colour-blind palette, a Connections fail) and check each parses.
-  Also confirm how they look on a board: Wordle shows `3`, a fail `7 · failed`; Connections shows
-  guesses made (`4 · perfect`).
+  posts (hard mode, a fail, the colour-blind palette, a Connections fail) and check each is
+  accepted. Also check how they read on a board (Wordle `3`, fail `7 · failed`; Connections
+  `4 · perfect`).
+- **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)`, inferred from one sample
+  (94 92 100 91 90 -> 929). If a real post is rejected, correct the weights in
+  `parsers/maptap.py`.
+- **Chainle.** The 5,000 maximum is stated on chainle.org but the site shows no share text, so
+  the parser comes from four real posts. Still unconfirmed: that higher is better.
+- **Cross-server sharing** needs a live check in two servers that share a member.
 
 ## Later
-### More games
-
-### Bot
 - Streaks.
-- Persistent leaderboard buttons (currently expire after 10 minutes / restart).
-- Revisit the opt-in prompt trigger if it feels wrong in practice (currently: first score
-  posted by someone in 2+ servers running the bot).
-
-### Open questions
+- Persistent leaderboard buttons (they currently expire after 10 minutes or a restart), and a
+  replace-or-keep question that survives a restart.
+- Revisit the opt-in sharing prompt if it feels wrong in practice (it currently appears on the
+  first score by someone in 2+ servers running the bot).
+- A real home for `Krillion ∞` if people want it: it is a different game and is ignored today.
 - Spoiler handling for emoji grids (Wordle).
+- More games: paste a real share post and a parser can be added.
