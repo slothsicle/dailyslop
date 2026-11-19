@@ -35,7 +35,8 @@ the overwrite prompt) is only tested offline, see ROADMAP.md. Next games are in 
   plus `extra`); `weekly` = the last 7 *puzzle days* up to that puzzle; `monthly` = the UTC
   calendar month by when the score was posted; `all-time`. The last three are per-player
   **averages** and never show `extra`. `/leaderboard` takes only the game; the period is a row of
-  buttons on the message (the auto-posted boards have them too).
+  buttons on the message (the auto-posted boards have them too). `/leaderboard` replies delete
+  themselves after 5 minutes (`LEADERBOARD_TTL`); the bot's auto-posts do not.
 - **Replacing posts:** posting a score deletes the bot's previous post for the same
   channel + game + puzzle (never another game or another day, never anyone's own messages). The
   new post carries only its own author's comment, so replaced posts lose their comment; that is

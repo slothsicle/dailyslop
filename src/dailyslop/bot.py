@@ -19,6 +19,7 @@ from dailyslop.leaderboard import Entry, page_count, quote_annotation, render_pa
 log = logging.getLogger("dailyslop")
 
 VIEW_TIMEOUT = 600  # seconds before buttons stop working
+LEADERBOARD_TTL = 300  # /leaderboard replies delete themselves this many seconds after posting
 
 
 def board_for(db: Database, guild: discord.Guild, game: Game, scope: str) -> tuple[str, list[Entry]]:
@@ -272,7 +273,9 @@ class DailySlopBot(discord.Client):
                 )
                 return
             await interaction.response.send_message(
-                embed=board_embed(view.title, view.entries, 0), view=view
+                embed=board_embed(view.title, view.entries, 0),
+                view=view,
+                delete_after=LEADERBOARD_TTL,  # the channel stays clean; auto-posts are not affected
             )
             view.message = await interaction.original_response()
 
