@@ -18,6 +18,8 @@
   provided install link.
 - **v0.3.4**: `/purge` takes `all:true` (also deletes each game's latest board) and can be run by
   anyone.
+- **v0.3.5**: a sharing user with the same puzzle stored in several servers (pasted while private)
+  now shows the latest paste, not the earliest; repeat checks compare against that copy.
 
 ## Needs verification
 Everything in `bot.py` is tested offline only, so the first live use of each is a test:

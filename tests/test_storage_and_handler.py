@@ -172,6 +172,22 @@ def test_same_puzzle_stored_in_two_servers_is_counted_once_after_opting_in(db):
     assert entries == [Entry("ann", "365.0 avg · 1 play")]
 
 
+def test_latest_paste_wins_when_a_private_user_pasted_twice_then_opts_in(db):
+    # Pasted in Y while private, corrected in X while private, then opted in.
+    post(db, ANN, "ann", K125_190, guild_id=Y)
+    post(db, ANN, "ann", K125_365, guild_id=X)
+    db.set_sharing(ANN, True)
+    assert board(db, X, {ANN})[1] == [Entry("ann", "365")]
+    assert board(db, Y, {ANN})[1] == [Entry("ann", "365")]
+
+
+def test_repeat_check_for_a_sharing_user_compares_with_the_latest_copy(db):
+    post(db, ANN, "ann", K125_190, guild_id=Y)
+    post(db, ANN, "ann", K125_365, guild_id=X)
+    db.set_sharing(ANN, True)
+    assert post(db, ANN, "ann", K125_365, guild_id=X).identical_repeat
+
+
 def test_names_come_from_the_server_being_viewed(db):
     db.set_sharing(ANN, True)
     post(db, ANN, "ann-in-x", K125_365, guild_id=X)

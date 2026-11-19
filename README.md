@@ -89,7 +89,8 @@ If they say yes:
 - names are their nickname in the server being viewed.
 
 If they say no or ignore the question, they stay private. Either way they can switch with
-`/sharing`, and the change applies to their earlier scores too.
+`/sharing`, and the change applies to their earlier scores too. If you pasted the same puzzle in
+several servers before opting in, your most recent paste is the one that counts.
 
 ## Adding it to your server
 

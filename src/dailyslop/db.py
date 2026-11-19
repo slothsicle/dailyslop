@@ -147,7 +147,7 @@ class Database:
     def find_score(self, *, guild_id: int, user_id: int, game: str, puzzle: int) -> Score | None:
         """The score that blocks a new paste: this user's stored score for the puzzle.
 
-        Users who share across servers have one per puzzle everywhere (earliest wins);
+        Users who share across servers have one per puzzle everywhere (latest wins);
         everyone else one per server.
         """
         where = "user_id = ? AND game = ? AND puzzle = ?"
@@ -157,7 +157,7 @@ class Database:
             args += (guild_id,)
         row = self.conn.execute(
             "SELECT guild_id, user_id, user_name, puzzle, total, created_at, detail, extra "
-            f"FROM scores WHERE {where} ORDER BY created_at LIMIT 1",
+            f"FROM scores WHERE {where} ORDER BY created_at DESC LIMIT 1",
             args,
         ).fetchone()
         return Score(*row) if row else None
@@ -209,7 +209,7 @@ class Database:
         """Overwrite this user's score for a puzzle, in one transaction.
 
         A user who shares across servers has their old copy deleted from *every* server;
-        boards keep the earliest copy, so a leftover would keep showing the old score.
+        a leftover copy could still be the one a board shows.
         """
         with self.conn:
             if self._shares_everywhere(user_id):

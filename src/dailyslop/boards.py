@@ -21,7 +21,7 @@ def visible_scores(
 
     A score shows if it was pasted in this server, or if its author opted in to sharing
     and is currently a member here. A user who has the same puzzle stored from several
-    servers (possible if they shared only after posting) is counted once, earliest first.
+    servers (possible if they shared only after posting) is counted once, with the latest paste winning.
     """
     members = set(member_ids)
     candidates = [
@@ -30,7 +30,7 @@ def visible_scores(
         if s.guild_id == guild_id or s.user_id in members
     ]
     unique: dict[tuple[int, int], Score] = {}
-    for score in sorted(candidates, key=lambda s: s.created_at):
+    for score in sorted(candidates, key=lambda s: s.created_at, reverse=True):
         unique.setdefault((score.user_id, score.puzzle), score)
     return list(unique.values())
 

@@ -36,7 +36,8 @@ what is still unverified against real posts or a live server is listed in `ROADM
 ## Behaviour to preserve
 - **Visibility:** a score shows on server G's board if it was pasted in G, or if its author opted
   in to sharing AND is currently a member of G. Decided at read time, so changing a preference
-  needs no migration. Sharing users get one score per puzzle globally; everyone else one per
+  needs no migration. Sharing users get one score per puzzle globally (if copies from several servers exist, e.g.
+  pasted while private, the latest paste wins); everyone else one per
   puzzle per server. Default is private.
 - **Boards** (`boards.SCOPES`): `daily` = the latest puzzle anyone has a score for (raw totals,
   `extra` on a second line under each player, normal text, not monospace); `weekly` = the last 7
