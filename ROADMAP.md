@@ -13,6 +13,8 @@
   no row. Also MapTap rounds on the daily board; auto-posts have no period buttons; release
   convention in CLAUDE.md.
 - **v0.2.2**: Wordle shows its greens per guess on the daily board (earlier scores have none).
+- **v0.3.0**: `/purge` (deletes the bot's old posts in a channel, keeps each game's latest board);
+  daily boards put the emoji/round scores on a second line under each player; 5 players per page.
 
 ## Needs verification with real posts
 - **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)` in the sanity check, inferred from
