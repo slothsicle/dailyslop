@@ -31,6 +31,7 @@
 - **v0.5.1**: auto-posts show the board for the puzzle just pasted, so a player in a timezone ahead
   no longer hides the day everyone else is on (#1); `/leaderboard` Daily gets Earlier day / Later
   day buttons.
+- **v0.6.0**: Farflung is supported (stand-in emoji for the tier words until the game has its own).
 
 ## Needs verification
 `bot.py` has no unit tests, so the first live use of each feature is the test. Seen working live:
