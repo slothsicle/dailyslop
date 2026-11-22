@@ -67,6 +67,13 @@ gets a short note that disappears after 10 seconds. Pasting a *different* score 
 you already posted asks you (a message only you can answer) whether to **replace** the old one,
 so a wrong paste can be fixed. No answer within 60 seconds keeps the old score.
 
+**New bests get a shout-out.** When a score beats every other single-day score on the server
+for the week (last 7 puzzle days), the month (UTC) or all-time, the bot posts a 🏆 message and
+pings whoever held the old best, so they know they've been knocked off the top. A score that
+beats your *own* best for one of those periods gets a 🎉 line on its post instead (no ping).
+Only the biggest period is mentioned, a tie doesn't count, and a period needs at least three
+earlier puzzle days in it before anything counts as a record (no "monthly record" on the 2nd).
+
 **Made-up puzzle numbers are ignored.** Every game is daily, so a score whose puzzle number is
 more than a couple of days ahead of the newest one the bot has seen is treated as fake and the
 message is left alone. (The first score ever posted for a game is always accepted.)

@@ -55,6 +55,15 @@ real posts or a live server is listed in `ROADMAP.md`.
   through the puzzles that have scores.
 - **Grid games:** Wordle and Connections scores expose `.grid` (the pasted rows). `bot.post_share`
   puts it between the header line and the comment, above the board embed. Not stored in the DB.
+- **Records** (`boards.find_records`): after a score is stored, `post_share` checks whether it
+  strictly beats every other *single-day* score in the weekly / monthly / all-time window (same
+  windows as the boards) on this server, and the player's own scores in that window. Only the
+  biggest window is reported for each; a personal best is dropped when a server record of the
+  same or bigger window covers it. A window needs `MIN_RECORD_PUZZLES` (3) earlier puzzle days.
+  A personal best is a line on the post (no ping); a server record is its own message (so it
+  survives post replacement; `/purge` treats it like any other bot message) pinging only the previous
+  holders who are still members (`AllowedMentions` limited to those users). Replacing a score
+  re-runs the check. Nothing is stored, so an announced record can be "re-broken" by a replace.
 - **Replacing posts:** posting a score deletes the bot's previous post for the same
   channel + game + puzzle (never another game or day, never anyone else's messages). A new post
   carries only its own author's comment, so a replaced post's comment is lost; that is

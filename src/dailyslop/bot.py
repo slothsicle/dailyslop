@@ -10,7 +10,7 @@ from collections.abc import Callable
 import discord
 from discord import app_commands
 
-from dailyslop.boards import SCOPES, build_board, daily_puzzles
+from dailyslop.boards import SCOPES, Record, build_board, daily_puzzles, find_records
 from dailyslop.db import Database
 from dailyslop.games import GAMES, Game
 from dailyslop.handler import Handled, handle_message, replace_score
@@ -37,6 +37,30 @@ def board_for(
         names={m.id: m.display_name for m in members},
         puzzle=puzzle,
     )
+
+
+def personal_line(record: Record) -> str:
+    """A new personal best: one line on the score post itself."""
+    when = {
+        "all-time": "All-time personal best",
+        "monthly": f"Personal best for {record.label}",
+        "weekly": "Personal best of the week",
+    }[record.scope]
+    return f"🎉 {when}! (previous: {record.previous:,})"
+
+
+def server_line(name: str, game: Game, total: int, record: Record) -> str:
+    """A new server best: its own message, pinging whoever held the old best."""
+    what = {
+        "all-time": f"a new all-time {game.title} server record",
+        "monthly": f"the server's best {game.title} score for {record.label}",
+        "weekly": f"the server's best {game.title} score of the week",
+    }[record.scope]
+    text = f"🏆 **{name}** just set {what}: **{total:,}** (previous best {record.previous:,})."
+    if record.holders:
+        pings = " ".join(f"<@{uid}>" for uid in record.holders)
+        text += f" {pings}, you've been knocked off the top."
+    return text
 
 
 def puzzles_for(db: Database, guild: discord.Guild, game: Game) -> list[int]:
@@ -278,7 +302,7 @@ class ReplacePromptView(discord.ui.View):
                     score=share.score,
                 )
                 await self.bot.post_share(
-                    self.channel, self.guild, self.name, share, quote
+                    self.channel, self.guild, self.user_id, self.name, share, quote
                 )
                 quote = ""  # the comment goes on the first one only
         await self._cleanup()
@@ -429,19 +453,28 @@ class DailySlopBot(discord.Client):
         self,
         channel: discord.abc.Messageable,
         guild: discord.Guild,
+        user_id: int,
         name: str,
         share: Handled,
         quote: str,
     ) -> None:
         """Post one compact score + board, then delete the bot's previous post for the same
-        game and puzzle in this channel. Caller must hold the channel lock."""
+        game and puzzle in this channel. Caller must hold the channel lock.
+
+        A new personal best gets a line on the post; a new server best gets its own message
+        (so it outlives the post being replaced) that pings whoever held the old best."""
         game = share.game
+        records = find_records(
+            self.db, guild.id, game, user_id, share.score.puzzle, {m.id for m in guild.members}
+        )
         view = LeaderboardView(
             lambda scope, _puzzle: board_for(self.db, guild, game, scope, share.score.puzzle),
             period_buttons=False,
         )
         content = f"**{name}** · {share.score.display()}"
         grid = getattr(share.score, "grid", "")  # Wordle/Connections: keep their original grid
+        if records.personal:
+            content += f"\n{personal_line(records.personal)}"
         if grid:
             content += f"\n{grid}"
         if quote:
@@ -460,6 +493,18 @@ class DailySlopBot(discord.Client):
                 await sent.channel.get_partial_message(old_id).delete()
             except discord.HTTPException:
                 pass  # already gone, or we can't delete it: nothing to do
+        if records.server:
+            try:
+                await channel.send(
+                    server_line(name, game, share.score.total, records.server),
+                    allowed_mentions=discord.AllowedMentions(  # only the dethroned get pinged
+                        everyone=False,
+                        roles=False,
+                        users=[discord.Object(uid) for uid in records.server.holders],
+                    ),
+                )
+            except discord.HTTPException as exc:  # a congrats must never block the rest
+                log.warning("Could not post a record message in #%s: %s", channel, exc)
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot or message.guild is None:
@@ -484,7 +529,9 @@ class DailySlopBot(discord.Client):
 
         # Post first, delete second: if posting fails the original is still there.
         for share in new:
-            await self.post_share(message.channel, message.guild, name, share, quote)
+            await self.post_share(
+                message.channel, message.guild, message.author.id, name, share, quote
+            )
             quote = ""  # their comment travels with the first new score only
 
         if same:

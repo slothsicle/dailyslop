@@ -36,7 +36,8 @@
 ## Needs verification
 `bot.py` has no unit tests, so the first live use of each feature is the test. Seen working live:
 the period buttons, post-replacing, `/purge`, and cross-server sharing for one person across two
-servers. Not yet confirmed live: the replace-or-keep prompt and two pastes arriving at once.
+servers. Not yet confirmed live: the replace-or-keep prompt, two pastes arriving at once, and the
+record shout-outs (🏆 message and its ping, 🎉 line).
 
 With real posts:
 - **Wordle and Connections** are built from the documented share format. Connections has now

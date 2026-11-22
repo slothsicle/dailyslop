@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Collection, Mapping
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from dailyslop.db import Database, Score
@@ -125,3 +126,93 @@ def build_board(
         for s in today
     ]
     return f"{game.title} {game.puzzle_label(shown)}", entries
+
+
+# --- records -----------------------------------------------------------------------------
+
+RECORD_SCOPES = ("all-time", "monthly", "weekly")  # biggest first: only the biggest is announced
+# A record only counts once the window already holds this many earlier puzzle days, so the
+# 2nd of the month (or a brand-new server) doesn't hand out "monthly record" for beating one day.
+MIN_RECORD_PUZZLES = 3
+
+
+@dataclass(frozen=True)
+class Record:
+    scope: str  # one of RECORD_SCOPES
+    label: str  # how the period reads in a sentence: "this week", "November", "all-time"
+    previous: int  # the best total before this score
+    holders: tuple[int, ...] = ()  # server records: who held `previous` (never the scorer)
+
+
+@dataclass(frozen=True)
+class Records:
+    server: Record | None = None
+    personal: Record | None = None  # None when a server record already says as much
+
+
+def _beaten(mine: Score, others: list[Score], sign: int) -> int | None:
+    """The previous best that `mine` strictly beats, or None (a tie is not a record)."""
+    if len({s.puzzle for s in others}) < MIN_RECORD_PUZZLES:
+        return None
+    best = min(sign * s.total for s in others)
+    return sign * best if sign * mine.total < best else None
+
+
+def find_records(
+    db: Database,
+    guild_id: int,
+    game: Game,
+    user_id: int,
+    puzzle: int,
+    member_ids: Collection[int],
+    now: float | None = None,
+) -> Records:
+    """Did this user's stored score for `puzzle` set a single-day best on this server's board?
+
+    Windows match the boards: weekly = the last 7 puzzle days, monthly = the UTC month the
+    score was posted in, all-time = everything. Only the biggest window is reported, for the
+    server and for the player; a personal best is dropped if a server record of the same or a
+    bigger window already covers it. Server holders are limited to current members.
+    """
+    members = set(member_ids)
+    scores = visible_scores(db, guild_id, game.key, members)
+    mine = next((s for s in scores if s.user_id == user_id and s.puzzle == puzzle), None)
+    if mine is None:
+        return Records()
+    sign = -1 if game.higher_is_better else 1
+    current = datetime.fromtimestamp(time.time() if now is None else now, UTC)
+    latest_puzzle = max(s.puzzle for s in scores)
+
+    def window(scope: str) -> list[Score]:
+        if scope == "weekly":
+            return [s for s in scores if s.puzzle > latest_puzzle - WEEK_PUZZLES]
+        if scope == "monthly":
+            return [
+                s
+                for s in scores
+                if (d := datetime.fromtimestamp(s.created_at, UTC)).year == current.year
+                and d.month == current.month
+            ]
+        return scores
+
+    labels = {"weekly": "this week", "monthly": f"{current:%B}", "all-time": "all-time"}
+    server = personal = None
+    for scope in RECORD_SCOPES:
+        rows = window(scope)
+        if mine not in rows:
+            continue
+        others = [s for s in rows if s is not mine]
+        if server is None and (prev := _beaten(mine, others, sign)) is not None:
+            holders = sorted(
+                {s.user_id for s in others if s.total == prev and s.user_id != user_id}
+                & members
+            )
+            server = Record(scope, labels[scope], prev, tuple(holders))
+        own = [s for s in others if s.user_id == user_id]
+        if personal is None and (prev := _beaten(mine, own, sign)) is not None:
+            personal = Record(scope, labels[scope], prev)
+    if server and personal and (
+        RECORD_SCOPES.index(personal.scope) >= RECORD_SCOPES.index(server.scope)
+    ):
+        personal = None
+    return Records(server, personal)
