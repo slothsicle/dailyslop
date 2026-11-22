@@ -35,6 +35,8 @@
 - **v0.7.0**: new weekly / monthly / all-time bests get a shout-out: a 🏆 message that pings
   whoever was knocked off the server's top spot, or a 🎉 line for a personal best. MapTap reads
   its date in UTC and no longer files `January 1` under last year when posted ahead of UTC.
+- **v0.7.1**: docs only. Connections is verified against real posts, and MapTap has held up
+  in heavy daily use.
 
 ## Needs verification
 `bot.py` has no unit tests, so the first live use of each feature is the test. Seen working live:
