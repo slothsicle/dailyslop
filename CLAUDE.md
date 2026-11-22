@@ -26,7 +26,8 @@ real posts or a live server is listed in `ROADMAP.md`.
   puzzle id is shown (MapTap shows dates).
 - `games.py`: registry of games and ranking direction. `handler.py`: Discord-free
   text -> stored scores, and classifying them (`MessageResult.new/same/changed/keep_original`).
-  `boards.py`: decides which scores appear on a server's board and builds each period.
+  `boards.py`: decides which scores appear on a server's board, builds each period, and spots
+  new records (`find_records`).
   `leaderboard.py`: rendering and paging (5 per page on the daily board, 10 on the
   weekly/monthly/all-time averages). `bot.py`: Discord glue only; keep logic out of it.
 - `db.py`: SQLite. `scores`: one row per guild/user/game/puzzle (the guild is where it was
@@ -56,14 +57,15 @@ real posts or a live server is listed in `ROADMAP.md`.
 - **Grid games:** Wordle and Connections scores expose `.grid` (the pasted rows). `bot.post_share`
   puts it between the header line and the comment, above the board embed. Not stored in the DB.
 - **Records** (`boards.find_records`): after a score is stored, `post_share` checks whether it
-  strictly beats every other *single-day* score in the weekly / monthly / all-time window (same
-  windows as the boards) on this server, and the player's own scores in that window. Only the
-  biggest window is reported for each; a personal best is dropped when a server record of the
-  same or bigger window covers it. A window needs `MIN_RECORD_PUZZLES` (3) earlier puzzle days.
-  A personal best is a line on the post (no ping); a server record is its own message (so it
-  survives post replacement; `/purge` treats it like any other bot message) pinging only the previous
-  holders who are still members (`AllowedMentions` limited to those users). Replacing a score
-  re-runs the check. Nothing is stored, so an announced record can be "re-broken" by a replace.
+  strictly beats (ties don't count) every other *single-day* score in the weekly / monthly /
+  all-time window on this server (same windows as the boards), and the player's own scores in
+  that window. Only the biggest window is reported for each, and a personal best is dropped when
+  a server record of the same or a bigger window covers it. A window needs `MIN_RECORD_PUZZLES`
+  (3) earlier puzzle days. A personal best is a 🎉 line on the post, with no ping. A server
+  record is its own 🏆 message, so it survives post replacement (`/purge` treats it like any
+  other bot message), and pings only the previous holders who are still members
+  (`AllowedMentions` limited to them; never everyone or roles). Nothing is stored, so replacing a
+  record-setting score announces it again.
 - **Replacing posts:** posting a score deletes the bot's previous post for the same
   channel + game + puzzle (never another game or day, never anyone else's messages). A new post
   carries only its own author's comment, so a replaced post's comment is lost; that is
@@ -102,7 +104,7 @@ real posts or a live server is listed in `ROADMAP.md`.
 
 ## Releases
 Whenever work is merged into `main` and pushed, version it in the same step (don't wait to be
-asked), as v0.1.0 to v0.4.x were cut:
+asked), as the earlier releases were cut:
 1. Pick the bump: **minor** (0.3.0 -> 0.4.0) for a new game, command or user-visible feature;
    **patch** (0.3.0 -> 0.3.1) for fixes, parser corrections, docs or cleanups. A schema migration
    alone is not a reason for a minor bump. If unsure, pick patch and say so.

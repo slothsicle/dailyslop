@@ -8,7 +8,7 @@ pastes a score, dailyslop:
 1. works out which game it is,
 2. posts a compact version in its place and deletes the original paste,
 3. shows that game's leaderboard right under it, and
-4. deletes its own post from earlier in the day, so the channel only ever holds the latest board.
+4. deletes its own earlier post for that game and day, so the channel only ever holds the latest board.
 
 If the bot can't fully understand a message, **it leaves it alone**. It never deletes anything
 it couldn't parse.
@@ -64,8 +64,8 @@ message are each recorded. A message with a lot of other text (over about 500 ch
 
 **Repeats.** Only one score per person per puzzle counts. Pasting the same score again just
 gets a short note that disappears after 10 seconds. Pasting a *different* score for a puzzle
-you already posted asks you (a message only you can answer) whether to **replace** the old one,
-so a wrong paste can be fixed. No answer within 60 seconds keeps the old score.
+you already posted asks whether to **replace** the old one (only you can press the buttons), so a
+wrong paste can be fixed. No answer within 60 seconds keeps the old score.
 
 **New bests get a shout-out.** When a score beats every other single-day score on the server
 for the week (last 7 puzzle days), the month (UTC) or all-time, the bot posts a 🏆 message and
@@ -199,7 +199,7 @@ Layout:
 - `src/dailyslop/parsers/`: one pure parser per game (text in, score or `None` out).
 - `games.py`: registry of games and how each is ranked.
 - `handler.py`: Discord-free logic that finds scores in a message, checks them and stores them.
-- `db.py`: SQLite storage. `boards.py`: which scores appear on which board.
+- `db.py`: SQLite storage. `boards.py`: which scores appear on which board, and new records.
   `leaderboard.py`: rendering and paging.
 - `bot.py`: the Discord glue. Keep logic out of it.
 
@@ -211,6 +211,8 @@ entry to `games.py`. See [CLAUDE.md](CLAUDE.md) for conventions and the release 
 - Leaderboard buttons stop working after 10 minutes or a bot restart. Run `/leaderboard` again.
 - A replace-or-keep question that is open when the bot restarts stops working (its buttons go
   dead), so paste again if that happens.
+- Fixing a record-setting score with **replace** announces the record again (records aren't
+  stored; they're worked out from the scores each time).
 - Scores stored before a game's daily-board extras existed (for example Chainle squares) show
   without them.
 - The bot has run live in two servers, and cross-server sharing has so far been used by one
