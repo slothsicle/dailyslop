@@ -11,7 +11,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
-    "ruff",
+    "ruff>=0.16.9",  # the version the code is linted with; older ones check fewer rules
 ]
 
 [build-system]

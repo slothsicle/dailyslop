@@ -130,7 +130,8 @@ asked), as v0.1.0 to v0.4.x were cut:
   otherwise the post is unparseable. `Krillion ∞ #n` is a different game and is ignored.
 - **MapTap:** `www.maptap.gg <Month> <day>` / five `<score><emoji>` tokens / `Final score: N`.
   No puzzle number or year, so the puzzle id is the date's ordinal, with the year inferred from
-  today (this year unless that would be more than a day in the future). Final score is out of
+  today's UTC date (the most recent of next/this/last year that is at most a day in the future,
+  so `January 1` seen on Dec 31 UTC is tomorrow, not last January). Final score is out of
   1000. Rounds are weighted `(1, 1, 2, 3, 3)`; this reproduces all three real samples seen so far
   exactly (94 92 100 91 90 -> 929, 100 69 88 100 93 -> 924, 100 100 85 99 31 -> 760) but is
   **inferred from them plus loose sources**, so the parser only enforces it within `TOLERANCE` (5). If more real posts disagree, fix the weights or loosen

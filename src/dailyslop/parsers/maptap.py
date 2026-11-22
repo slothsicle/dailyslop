@@ -11,14 +11,14 @@ sample we have exactly, but they are inferred, not documented, so the check allo
 small tolerance and should be tightened or corrected if more samples disagree.
 
 There is no puzzle number, only a date with no year. The puzzle id is the date's ordinal,
-with the year inferred from today's date.
+with the year inferred from today's date (UTC).
 """
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 ROUND_WEIGHTS = (1, 1, 2, 3, 3)
 MAX_SCORE = 100 * sum(ROUND_WEIGHTS)  # 1000
@@ -60,18 +60,23 @@ class MapTapScore:
 
 
 def _resolve_date(month: int, day: int, today: date) -> date | None:
-    """Pick the year for a month/day with no year: this year, unless that's in the future."""
-    try:
-        candidate = date(today.year, month, day)
-        if candidate > today + timedelta(days=1):  # 1 day of slack for timezones
-            candidate = date(today.year - 1, month, day)
-        return candidate
-    except ValueError:  # e.g. Feb 29 in a non-leap year, or day out of range
-        return None
+    """Pick the year for a month/day with no year: the most recent of next year, this year
+    and last year that isn't more than a day in the future (1 day of slack for timezones).
+
+    Next year covers someone ahead of UTC at New Year: "January 1" seen on Dec 31 is tomorrow,
+    not last January."""
+    for year in (today.year + 1, today.year, today.year - 1):
+        try:
+            candidate = date(year, month, day)
+        except ValueError:  # e.g. Feb 29 in a non-leap year, or day out of range
+            continue
+        if candidate <= today + timedelta(days=1):
+            return candidate
+    return None
 
 
 def parse(text: str, today: date | None = None) -> MapTapScore | None:
-    today = today or date.today()
+    today = today or datetime.now(UTC).date()  # the bot works in UTC
     lines = [ln.strip() for ln in text.strip().splitlines() if ln.strip()]
     if len(lines) != 3:
         return None

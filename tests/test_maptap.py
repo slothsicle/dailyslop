@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -43,6 +43,22 @@ def test_year_is_inferred_from_today():
     # A date well in the "future" this year is last year's.
     late = SAMPLE.replace("November 17", "December 25")
     assert parse(late, today=TODAY).puzzle == date(2025, 12, 25).toordinal()
+
+
+def test_new_year_ahead_of_utc_is_next_year():
+    # Dec 31 UTC, but a player in NZ is already on Jan 1: that's tomorrow, not last January.
+    jan1 = SAMPLE.replace("November 17", "January 1")
+    assert parse(jan1, today=date(2026, 12, 31)).puzzle == date(2027, 1, 1).toordinal()
+    # Two days ahead is too far: it falls back to the most recent January 1 in the past.
+    jan2 = SAMPLE.replace("November 17", "January 2")
+    assert parse(jan2, today=date(2026, 12, 31)).puzzle == date(2026, 1, 2).toordinal()
+
+
+def test_default_today_is_utc():
+    # No `today` given: uses the UTC date, so a post for today's UTC date always parses as it.
+    now = datetime.now(UTC).date()
+    text = SAMPLE.replace("November 17", f"{now:%B} {now.day}")
+    assert parse(text).puzzle == now.toordinal()
 
 
 def test_impossible_dates_are_rejected():
