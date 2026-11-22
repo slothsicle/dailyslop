@@ -130,14 +130,14 @@ asked), as the earlier releases were cut:
 - **Krillion** (verified against real posts): `Krillion #<n> 🦐`, the total, then 7 emoji, each a
   rarity tier: ⬛ 0, 🫧 10, 🐟 30, 🦑 60, 🏮 85, 🌟 100. The points must sum to the total (max 700),
   otherwise the post is unparseable. `Krillion ∞ #n` is a different game and is ignored.
-- **MapTap:** `www.maptap.gg <Month> <day>` / five `<score><emoji>` tokens / `Final score: N`.
+- **MapTap** (verified in heavy daily use): `www.maptap.gg <Month> <day>` / five `<score><emoji>` tokens / `Final score: N`.
   No puzzle number or year, so the puzzle id is the date's ordinal, with the year inferred from
   today's UTC date (the most recent of next/this/last year that is at most a day in the future,
   so `January 1` seen on Dec 31 UTC is tomorrow, not last January). Final score is out of
-  1000. Rounds are weighted `(1, 1, 2, 3, 3)`; this reproduces all three real samples seen so far
-  exactly (94 92 100 91 90 -> 929, 100 69 88 100 93 -> 924, 100 100 85 99 31 -> 760) but is
-  **inferred from them plus loose sources**, so the parser only enforces it within `TOLERANCE` (5). If more real posts disagree, fix the weights or loosen
-  the check; don't assume the formula is right.
+  1000. Rounds are weighted `(1, 1, 2, 3, 3)`, **inferred** from the first real samples (94 92 100
+  91 90 -> 929, 100 69 88 100 93 -> 924, 100 100 85 99 31 -> 760), so the parser enforces it
+  only within `TOLERANCE` (5). Heavy daily use since has produced no rejected posts. If one is
+  ever rejected, fix the weights or loosen the check; don't assume the formula is right.
 - **Chainle:** `Chainle #N · 2,837 🔗` / `Beat 71% of players` / a line of 5 squares (🟥🟧🟨🟩) /
   an optional link (real posts said `chainle.io`, the site is chainle.org; both accepted). Any
   extra line with no letters or digits is ignored; the squares may be glued to the link and the
@@ -149,8 +149,7 @@ asked), as the earlier releases were cut:
   (optional `*` = hard mode; `X/6` = fail), then one 5-square row per guess. The grid must agree
   with the header (row count; last row green iff solved). Fewest guesses wins; a fail counts as
   7. The `extra` is greens per guess.
-- **Connections** (documented format; one real post, a fail, has been accepted, wins not yet
-  seen): `Connections` / `Puzzle #512` / rows
+- **Connections** (verified against real posts): `Connections` / `Puzzle #512` / rows
   of 4 of 🟨🟩🟦🟪. A one-colour row is a solved group, a mixed row a mistake; 4 mistakes end the
   game. Score = guesses made (4 = perfect, 7 at most for a win); a fail counts as 8. Fewest
   wins. Inconsistent grids (unfinished, a colour solved twice, play after 4 mistakes) are left

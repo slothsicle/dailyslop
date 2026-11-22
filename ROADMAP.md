@@ -43,16 +43,12 @@ servers. Not yet confirmed live: the replace-or-keep prompt, two pastes arriving
 record shout-outs (🏆 message and its ping, 🎉 line).
 
 With real posts:
-- **Wordle and Connections** are built from the documented share format. Connections has now
-  accepted one real post (a fail); Wordle none. Collect real posts (hard mode, a fail, the
-  colour-blind palette, a Connections win) and check each is accepted. Also check how they read on a board (Wordle `3`, fail `7 · failed`; Connections
-  `4 · perfect`).
-- **MapTap scoring.** Rounds are weighted `(1, 1, 2, 3, 3)`, inferred from samples; all three
-  real ones so far agree (929, 924, 760). If a real post is rejected, correct the weights in
-  `parsers/maptap.py`.
+- **Wordle** is built from the documented share format and hasn't been checked against real
+  posts yet. Collect some (hard mode, a fail, the colour-blind palette) and check each is
+  accepted, and how they read on a board (`3`, fail `7 · failed`).
 - **Chainle.** The 5,000 maximum is stated on chainle.org but the site shows no share text, so
   the parser comes from four real posts. Still unconfirmed: that higher is better.
-- **Farflung** comes from one real post (`205/500 km`: Common, Common, Miss, Uncommon, Rare). It has no round emoji yet, so stand-ins are used (Common 🏠, Uncommon 🚗, Rare ✈️, Elusive 🚀, Farflung 🛸, Miss ⬛); swap them when the game adds its own.
+- **Farflung** (waiting on more posts) comes from one real post (`205/500 km`: Common, Common, Miss, Uncommon, Rare). It has no round emoji yet, so stand-ins are used (Common 🏠, Uncommon 🚗, Rare ✈️, Elusive 🚀, Farflung 🛸, Miss ⬛); swap them when the game adds its own.
 - **Cross-server sharing** has been used by one person; it still wants a wider check.
 
 ## Later

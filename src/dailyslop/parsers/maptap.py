@@ -6,9 +6,9 @@ Format:
     Final score: 929
 
 Five rounds out of 100 each. The final score is out of 1,000, so the rounds are weighted
-(later rounds count more). The weights below (1, 1, 2, 3, 3) reproduce the one real
-sample we have exactly, but they are inferred, not documented, so the check allows a
-small tolerance and should be tightened or corrected if more samples disagree.
+(later rounds count more). The weights below (1, 1, 2, 3, 3) are inferred from real posts,
+not documented, so the check allows a small tolerance. They have held up in heavy daily use;
+correct them if a real post is ever rejected.
 
 There is no puzzle number, only a date with no year. The puzzle id is the date's ordinal,
 with the year inferred from today's date (UTC).

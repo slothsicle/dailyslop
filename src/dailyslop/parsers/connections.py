@@ -1,6 +1,6 @@
 """Parser for NYT Connections share text.
 
-Format (from the game's share button; not yet checked against real posts here):
+Format (from the game's share button; verified against real posts):
     Connections
     Puzzle #512
     🟨🟩🟨🟨
