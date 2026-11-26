@@ -66,6 +66,12 @@ real posts or a live server is listed in `ROADMAP.md`.
   other bot message), and pings only the previous holders who are still members
   (`AllowedMentions` limited to them; never everyone or roles). Nothing is stored, so replacing a
   record-setting score announces it again.
+- **`/checkperms`** (anyone, ephemeral): `bot.permission_report` computes the bot's permissions in
+  the invoking channel (`channel.permissions_for(me)` vs `me.guild_permissions`) and
+  `permcheck` turns them into findings: a gap server-wide means the role, a gap only here means a
+  channel/category override. Also flags a timed-out bot, an invisible channel (the command
+  still works there) and an incomplete member cache. Needs View Channel, Send Messages (Send
+  Messages in Threads in a thread), Embed Links, Read Message History, Manage Messages.
 - **Replacing posts:** posting a score deletes the bot's previous post for the same
   channel + game + puzzle (never another game or day, never anyone else's messages). A new post
   carries only its own author's comment, so a replaced post's comment is lost; that is
@@ -145,7 +151,7 @@ asked), as the earlier releases were cut:
   chainle.org doesn't say higher is better, but points accumulate); the percentile is the
   `detail` and the squares are the `extra`. Any other text makes it unparseable. Built from four
   real posts, since chainle.org shows no share text.
-- **Wordle** (documented format only, NOT yet verified against real posts): `Wordle 1,234 3/6`
+- **Wordle** (verified against real wins: 4 stored scores, 3 players; a fail, hard mode and the colour-blind palette not yet seen): `Wordle 1,234 3/6`
   (optional `*` = hard mode; `X/6` = fail), then one 5-square row per guess. The grid must agree
   with the header (row count; last row green iff solved). Fewest guesses wins; a fail counts as
   7. The `extra` is greens per guess.

@@ -15,6 +15,7 @@ from dailyslop.db import Database
 from dailyslop.games import GAMES, Game
 from dailyslop.handler import Handled, handle_message, replace_score
 from dailyslop.leaderboard import Entry, page_count, page_size_for, quote_annotation, render_page
+from dailyslop.permcheck import check_members, check_permissions, render
 
 log = logging.getLogger("dailyslop")
 
@@ -407,6 +408,13 @@ class DailySlopBot(discord.Client):
             )
 
         @self.tree.command(
+            name="checkperms", description="Check that the bot is set up correctly in this channel"
+        )
+        @app_commands.guild_only()
+        async def checkperms(interaction: discord.Interaction) -> None:
+            await interaction.response.send_message(self.permission_report(interaction), ephemeral=True)
+
+        @self.tree.command(
             name="sharing", description="Choose whether your scores show on your other servers"
         )
         @app_commands.choices(
@@ -432,6 +440,29 @@ class DailySlopBot(discord.Client):
                 else "👍 Your scores will show only on the server where you post them.",
                 ephemeral=True,
             )
+
+    def permission_report(self, interaction: discord.Interaction) -> str:
+        """What the bot can do in the channel the command was run in. A slash command works
+        even where the bot can't see the channel, which is exactly what this has to catch."""
+        guild = interaction.guild
+        me = guild.get_member(self.user.id)
+        channel = guild.get_channel_or_thread(interaction.channel_id)
+        if me is None:
+            return "❌ I can't find myself in this server's member list. Try again in a minute."
+        if channel is None:
+            return (
+                "❌ I can't see this channel at all, so I can't read pastes or post here.\n"
+                "↳ Fix: give the bot's role **View Channel** in Channel Settings → Permissions "
+                "(check the category's too)."
+            )
+        findings = check_permissions(
+            channel.permissions_for(me),
+            me.guild_permissions,
+            thread=isinstance(channel, discord.Thread),
+            timed_out=me.is_timed_out(),
+        )
+        findings.append(check_members(len(guild.members), guild.member_count or 0))
+        return render(channel.mention, findings)
 
     async def setup_hook(self) -> None:
         dev_guild = os.environ.get("DEV_GUILD_ID")

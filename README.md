@@ -24,7 +24,7 @@ it couldn't parse.
 | Chainle | Total score, higher is better (max 5,000), with the percentile | ✅ Built from real posts; "higher is better" is assumed |
 | MapTap | Final score, higher is better (max 1,000) | ✅ Verified in heavy daily use (the round weights are inferred, and checked within a small tolerance) |
 | Farflung | Total points, higher is better (max 500) | ⚠️ Built from one real post. Tier names show as emoji (🏠 🚗 ✈️ 🚀 🛸) for now |
-| Wordle | Fewest guesses (a fail counts as 7) | ⚠️ Built from the documented format, not yet checked against real posts |
+| Wordle | Fewest guesses (a fail counts as 7) | ✅ Checked against real posts (wins; a fail not yet seen) |
 | Connections | Fewest guesses (a fail counts as 8) | ✅ Verified against real posts |
 
 `Krillion ∞` (infinity mode) is a different game and is ignored. See [ROADMAP.md](ROADMAP.md).
@@ -91,6 +91,9 @@ message is left alone. (The first score ever posted for a game is always accepte
 - `/purge [limit] [all]`: anyone can run it. Deletes the bot's old posts in the current channel
   (looking back through the last `limit` messages, default 200), keeping each game's latest
   board, or those too with `all:true`. It only deletes the bot's own messages, never scores.
+- `/checkperms`: anyone can run it. Replies privately with what the bot can and can't do in the
+  channel you run it in, and for each problem whether the bot's role or a channel/category
+  override is to blame, and what to change. Run it first if the bot isn't behaving.
 
 ## Using the bot in more than one server
 
@@ -128,6 +131,9 @@ Scores stay on the server where they were pasted unless you opt in with `/sharin
   send the raw text to whoever runs the bot, since that is a parser bug.
 - *The compact post appears but the original stays:* the bot lacks Manage Messages in that
   channel (check channel-level overrides).
+- *Not sure what's wrong:* run `/checkperms` in that channel. It spots a missing permission,
+  a channel or category override taking it away, a timed-out bot, and a channel the bot can't
+  see at all (slash commands still work in channels the bot can't see).
 - *A command is missing:* new commands can take a while. Reload Discord.
 
 To remove the bot, kick it or use **Server Settings, then Integrations**. Its stored scores

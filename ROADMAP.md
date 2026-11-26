@@ -37,17 +37,20 @@
   its date in UTC and no longer files `January 1` under last year when posted ahead of UTC.
 - **v0.7.1**: docs only. Connections is verified against real posts, and MapTap has held up
   in heavy daily use.
+- **v0.8.0**: `/checkperms` reports what the bot can do in the current channel and whether a
+  missing permission comes from its role or a channel/category override. Wordle is verified
+  against real wins.
 
 ## Needs verification
 `bot.py` has no unit tests, so the first live use of each feature is the test. Seen working live:
 the period buttons, post-replacing, `/purge`, and cross-server sharing for one person across two
 servers. Not yet confirmed live: the replace-or-keep prompt, two pastes arriving at once, and the
-record shout-outs (🏆 message and its ping, 🎉 line).
+record shout-outs (🏆 message and its ping, 🎉 line), and `/checkperms` (unit-tested logic only;
+try it in a channel with a deliberate override).
 
 With real posts:
-- **Wordle** is built from the documented share format and hasn't been checked against real
-  posts yet. Collect some (hard mode, a fail, the colour-blind palette) and check each is
-  accepted, and how they read on a board (`3`, fail `7 · failed`).
+- **Wordle** has held up against real wins. Still unseen: a fail, hard mode and the colour-blind
+  palette; check each is accepted, and how a fail reads on a board (`7 · failed`).
 - **Chainle.** The 5,000 maximum is stated on chainle.org but the site shows no share text, so
   the parser comes from four real posts. Still unconfirmed: that higher is better.
 - **Farflung** (waiting on more posts) comes from one real post (`205/500 km`: Common, Common, Miss, Uncommon, Rare). It has no round emoji yet, so stand-ins are used (Common 🏠, Uncommon 🚗, Rare ✈️, Elusive 🚀, Farflung 🛸, Miss ⬛); swap them when the game adds its own.
