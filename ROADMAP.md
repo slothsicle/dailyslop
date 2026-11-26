@@ -40,6 +40,8 @@
 - **v0.8.0**: `/checkperms` reports what the bot can do in the current channel and whether a
   missing permission comes from its role or a channel/category override. Wordle is verified
   against real wins.
+- **v0.8.1**: docs only. `docs/deploy.md` gains step 2e (firewall, fail2ban, swap, reboot after
+  kernel updates) to match the production server.
 
 ## Needs verification
 `bot.py` has no unit tests, so the first live use of each feature is the test. Seen working live:

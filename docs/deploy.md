@@ -113,6 +113,46 @@ Host slothbots
 
 so that `ssh slothbots` works. (Leave out the `IdentityAgent` line if you don't use an agent.)
 
+**2e. Harden the rest (as `admin`).** Nothing but SSH listens, so none of this is urgent, but it
+is cheap and is what the production server runs.
+
+```bash
+sudo apt install -y ufw fail2ban unattended-upgrades
+
+# Firewall. Allow SSH BEFORE enabling, or you lock yourself out.
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp
+sudo ufw --force enable
+ssh admin@<server-ip> 'echo still-reachable'      # from a NEW terminal, before you close this one
+
+# Ban IPs that keep failing to log in. Put your own IP in ignoreip so you can't ban yourself.
+sudo tee /etc/fail2ban/jail.d/sshd-local.conf >/dev/null <<'EOF'
+[DEFAULT]
+ignoreip = 127.0.0.1/8 ::1 <your-ip>
+bantime = 1h
+findtime = 10m
+maxretry = 5
+
+[sshd]
+enabled = true
+backend = systemd
+EOF
+sudo systemctl enable --now fail2ban && sudo systemctl restart fail2ban
+sudo fail2ban-client status sshd
+
+# Swap, so a 1 GB server survives a memory spike instead of killing the bot.
+sudo fallocate -l 1G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swappiness.conf && sudo sysctl --system
+```
+
+`unattended-upgrades` installs security updates by itself (check with
+`systemctl is-active unattended-upgrades`), but a new kernel only takes effect after a reboot.
+If `/var/run/reboot-required` exists, reboot at a quiet time: the bot comes back on its own, and
+scores pasted in that minute are left alone, so people can paste again.
+
 ## 3. Create the bot's user and get the code
 
 Run these as `admin`. The bot runs as its own login-less user, and the server pulls the code
@@ -234,10 +274,12 @@ sudo systemctl start dailyslop
   Deploy keys.
 - Runtime dependencies are pinned in `requirements.txt`, and Dependabot proposes updates.
   Install from it (as above) rather than letting pip pick versions.
-- Optional: a cloud firewall that allows inbound port 22 only (ideally from your own IP) cuts
-  the constant stream of SSH login attempts. They can't succeed with passwords off, but they
-  fill the logs. Nothing else listens, and the bot only makes outbound connections.
-- Keep the OS patched: `sudo apt update && sudo apt upgrade -y` every so often, or enable
-  `unattended-upgrades`.
+- `ufw` allows inbound port 22 only and `fail2ban` bans repeated SSH failures (step 2e). The
+  attempts can't succeed with passwords off; this just cuts the noise. Optionally also add a
+  cloud firewall in your provider's console that allows 22 only from your own IP. Nothing else
+  listens, and the bot only makes outbound connections.
+- Keep the OS patched: `unattended-upgrades` handles security updates, but check now and then
+  for `/var/run/reboot-required` and reboot when it exists, since kernel and libc updates
+  don't apply until then.
 - If you ever lock yourself out, the Hetzner console can attach a rescue system or reset
   access to the server.
